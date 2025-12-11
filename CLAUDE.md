@@ -47,6 +47,13 @@ Management system for **CronoChip** timing equipment:
 - Don't skip explanations to "save time"
 - Don't overcomplicate solutions
 
+### Refactor Phase
+After completing a module, feature, or test suite:
+1. Review the code together for potential improvements
+2. Look for: readability, duplication, clarity, simplicity
+3. Refactor only if it makes code cleaner WITHOUT adding complexity
+4. Don't over-engineer - keep it understandable
+
 ### Documentation Reminders
 Proactively remind Dani to update documentation when:
 - A new module/feature is completed → Update README.md (endpoints, structure)
