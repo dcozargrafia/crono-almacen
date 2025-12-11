@@ -1,82 +1,78 @@
-# NestJS Auth Starter
+# Crono-Almacén
 
-API REST con autenticación JWT y autorización basada en roles, lista para iniciar nuevos proyectos backend.
+Internal warehouse management system for timing equipment. Handles device manufacturing, rentals, sales, and repair tracking.
 
 ## Stack
 
-- **NestJS** - Framework Node.js enterprise
-- **PostgreSQL** - Base de datos relacional
-- **Prisma** - ORM type-safe con migraciones
-- **JWT + Passport** - Autenticación stateless
-- **bcrypt** - Hash seguro de contraseñas
-- **class-validator** - Validación automática de DTOs
-- **TypeScript** - Type safety completo
-- **Docker Compose** - PostgreSQL para desarrollo
+- **NestJS** - Node.js enterprise framework
+- **PostgreSQL** - Relational database
+- **Prisma** - Type-safe ORM with migrations
+- **JWT + Passport** - Stateless authentication
+- **bcrypt** - Secure password hashing
+- **class-validator** - Automatic DTO validation
+- **TypeScript** - Full type safety
+- **Docker Compose** - PostgreSQL for development
 
-## Características
+## Features
 
-- Sistema de autenticación completo (register/login)
-- JWT tokens con expiración configurable (default: 7 días)
-- Sistema de roles (USER/ADMIN) extensible
-- Guards personalizados (JwtAuthGuard, RolesGuard)
-- Decoradores útiles (@CurrentUser, @Roles)
-- Validación global automática de requests
-- Extensión de tipos de Express (type-safe req.user)
-- Prisma Studio para gestión visual de BD
-- Hot reload en desarrollo
+- Complete authentication system (register/login)
+- JWT tokens with configurable expiration (default: 7 days)
+- Role-based authorization (USER/ADMIN)
+- Custom guards (JwtAuthGuard, RolesGuard)
+- Useful decorators (@CurrentUser, @Roles)
+- Global automatic request validation
+- Express type extensions (type-safe req.user)
 
-## Prerrequisitos
+## Prerequisites
 
 - Node.js >= 18
-- npm, yarn o pnpm
-- Docker y Docker Compose
+- pnpm (recommended) or npm
+- Docker and Docker Compose
 
 ## Quick Start
 
-### 1. Clonar e instalar
+### 1. Clone and install
 
 ```bash
-git clone <tu-repo> mi-api
-cd mi-api
-npm install
+git clone <your-repo> crono-almacen
+cd crono-almacen
+pnpm install
 ```
 
-### 2. Configurar variables de entorno
+### 2. Configure environment variables
 
-Crea `.env` en la raíz:
+Copy the example file and edit as needed:
 
-```env
-DATABASE_URL="postgresql://cronochip:cronochip_dev_password@localhost:5432/cronochip_db"
-JWT_SECRET="cambia-esto-por-un-secret-muy-seguro-en-produccion"
-PORT=3000
+```bash
+cp .env.example .env
 ```
 
-### 3. Levantar PostgreSQL
+### 3. Start PostgreSQL
 
 ```bash
 docker-compose up -d
 ```
 
-### 4. Ejecutar migraciones
+### 4. Run migrations
 
 ```bash
-npm run db:migrate
+pnpm db:migrate
 ```
 
-### 5. Iniciar en modo desarrollo
+### 5. Start development server
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
-API disponible en: http://localhost:3000
+API available at: http://localhost:3000
 
-## Estructura del Proyecto
+## Project Structure
 
 ```
 ├── prisma/
-│   ├── schema.prisma          # Modelos de base de datos
-│   └── migrations/            # Migraciones versionadas
+│   ├── schema.prisma          # Database models
+│   └── migrations/            # Versioned migrations
 ├── src/
 │   ├── auth/
 │   │   ├── decorators/        # @CurrentUser, @Roles
@@ -87,8 +83,8 @@ API disponible en: http://localhost:3000
 │   │   ├── auth.module.ts
 │   │   └── auth.service.ts
 │   ├── types/
-│   │   ├── index.ts           # Tipos compartidos
-│   │   └── express.d.ts       # Extensión de tipos Express
+│   │   ├── index.ts           # Shared types
+│   │   └── express.d.ts       # Express type extensions
 │   ├── prisma.service.ts
 │   └── main.ts
 ├── test/
@@ -96,137 +92,76 @@ API disponible en: http://localhost:3000
 └── package.json
 ```
 
-## Endpoints
+## API Endpoints
 
-### Autenticación
+### Authentication
 
-```
-POST   /auth/register
-Body: { email, password, nombre }
-Response: { user, token }
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| POST | `/auth/register` | Create new user | No |
+| POST | `/auth/login` | Authenticate user | No |
+| GET | `/auth/profile` | Get current user | JWT |
 
-POST   /auth/login
-Body: { email, password }
-Response: { user, token }
+### Request/Response Examples
 
-GET    /auth/profile
-Headers: Authorization: Bearer <token>
-Response: { id, email, nombre, role }
-```
-
-### Ejemplos con autorización
-
-```
-GET    /auth/admin-only      → Requiere rol ADMIN
-GET    /auth/user-or-admin   → Requiere rol USER o ADMIN
+**Register**
+```bash
+curl -X POST http://localhost:3000/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com", "password": "123456", "name": "John Doe"}'
 ```
 
-## Uso de Guards y Decoradores
-
-### Proteger un endpoint
-
-```typescript
-import { Controller, Get, UseGuards } from '@nestjs/common';
-import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
-import { CurrentUser } from './auth/decorators/current-user.decorator';
-import type { CurrentUser as CurrentUserType } from './types/index.js';
-
-@Controller('productos')
-export class ProductosController {
-  @Get()
-  @UseGuards(JwtAuthGuard)
-  findAll(@CurrentUser() user: CurrentUserType) {
-    return { message: `Usuario ${user.nombre} consultando productos` };
-  }
-}
+**Login**
+```bash
+curl -X POST http://localhost:3000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com", "password": "123456"}'
 ```
 
-### Restringir por rol
-
-```typescript
-import { RolesGuard } from './auth/guards/roles.guard';
-import { Roles } from './auth/decorators/roles.decorator';
-
-@Controller('admin')
-export class AdminController {
-  @Get('dashboard')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN')
-  getDashboard() {
-    return { message: 'Solo administradores' };
-  }
-}
+**Profile (authenticated)**
+```bash
+curl http://localhost:3000/auth/profile \
+  -H "Authorization: Bearer <your-token>"
 ```
 
 ## Scripts
 
 ```bash
-# Desarrollo
-npm run dev              # Servidor con hot reload
-npm run build            # Compilar
-npm run start:prod       # Ejecutar compilado
+# Development
+pnpm dev              # Server with hot reload
+pnpm build            # Compile
+pnpm start:prod       # Run compiled
 
-# Base de datos
-npm run db:migrate       # Ejecutar migraciones
-npm run db:studio        # GUI visual de BD
-npm run db:generate      # Regenerar Prisma Client
+# Database
+pnpm db:migrate       # Run migrations
+pnpm db:studio        # Visual DB GUI
+pnpm db:generate      # Regenerate Prisma Client
 
 # Testing
-npm test                 # Tests unitarios
-npm run test:e2e         # Tests end-to-end
-npm run test:cov         # Coverage
+pnpm test             # Unit tests
+pnpm test:e2e         # End-to-end tests
+pnpm test:cov         # Coverage
 
-# Calidad
-npm run lint             # ESLint
-npm run format           # Prettier
+# Quality
+pnpm lint             # ESLint
+pnpm format           # Prettier
 ```
 
-## Personalización
+## Environment Variables
 
-### Agregar un nuevo rol
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `DATABASE_URL` | PostgreSQL connection string | `postgresql://user:pass@localhost:5432/db` |
+| `JWT_SECRET` | Secret for signing tokens | Use a long random string |
+| `PORT` | Server port | `3000` |
+| `NODE_ENV` | Environment | `development` / `production` |
 
-1. Actualizar tipo en `src/types/index.ts`:
-```typescript
-export type Role = 'USER' | 'ADMIN' | 'MODERATOR';
-```
-
-2. Actualizar schema de Prisma:
-```prisma
-enum Role {
-  USER
-  ADMIN
-  MODERATOR
-}
-```
-
-3. Ejecutar migración:
-```bash
-npm run db:migrate
-```
-
-### Agregar un nuevo modelo
-
-1. Editar `prisma/schema.prisma`
-2. Ejecutar `npm run db:migrate`
-3. Generar módulo: `npx nest g resource productos`
-
-## Producción
-
-### Variables de entorno
-
-```env
-DATABASE_URL="postgresql://user:pass@host:5432/db?schema=public"
-JWT_SECRET="usa-un-generador-de-secrets-aleatorios-muy-largo"
-PORT=3000
-NODE_ENV=production
-```
-
-### Generar secret seguro
+### Generate secure JWT secret
 
 ```bash
 node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 ```
 
-## Licencia
+## License
 
 MIT

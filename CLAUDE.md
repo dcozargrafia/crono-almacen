@@ -47,6 +47,13 @@ Management system for **CronoChip** timing equipment:
 - Don't skip explanations to "save time"
 - Don't overcomplicate solutions
 
+### Documentation Reminders
+Proactively remind Dani to update documentation when:
+- A new module/feature is completed → Update README.md (endpoints, structure)
+- New environment variables are added → Update README.md and .env.example
+- Session ends → Update SESSION_LOG.md
+- Major architectural decisions → Consider if CLAUDE.md needs updates
+
 ---
 
 ## Code Style
