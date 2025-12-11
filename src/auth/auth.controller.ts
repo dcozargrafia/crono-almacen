@@ -9,7 +9,6 @@ import {
 } from '@nestjs/common';
 import type { CurrentUser as CurrentUserType } from '../types/index.js';
 import { AuthService } from './auth.service';
-import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
@@ -17,12 +16,6 @@ import { CurrentUser } from './decorators/current-user.decorator';
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
-
-  // POST /auth/register - Create new user
-  @Post('register')
-  async register(@Body() registerDto: RegisterDto) {
-    return this.authService.register(registerDto);
-  }
 
   // POST /auth/login - Authenticate user
   @Post('login')
@@ -32,7 +25,7 @@ export class AuthController {
   }
 
   // GET /auth/profile - Get current user profile
-  @Get('profile')
+  @Get('getProfile')
   @UseGuards(JwtAuthGuard)
   getProfile(@CurrentUser() user: CurrentUserType) {
     return user;
