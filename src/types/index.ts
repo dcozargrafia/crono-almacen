@@ -1,31 +1,7 @@
-// Shared application types
-
-// Enums
-export type Role = 'USER' | 'ADMIN';
-
-// Entities
-export interface User {
-  id: number;
-  email: string;
-  name: string;
-  role: Role;
-  active: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-// Auth DTOs
-export interface LoginDto {
-  email: string;
-  password: string;
-}
-
-export interface CreateUserDto {
-  email: string;
-  password: string;
-  name: string;
-  role: Role;
-}
+// Re-export Prisma types (single source of truth)
+import { Role } from '@prisma/client';
+export { Role };
+export type { User } from '@prisma/client';
 
 // JWT payload (inside the token)
 export interface JwtPayload {
@@ -41,7 +17,7 @@ export interface CurrentUser {
   role: Role;
 }
 
-// Login/register response
+// Auth response
 export interface AuthResponse {
   user: {
     id: number;

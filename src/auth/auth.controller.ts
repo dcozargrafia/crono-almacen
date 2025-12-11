@@ -6,7 +6,7 @@ import {
   HttpStatus,
   Get,
   UseGuards,
-  Patch
+  Patch,
 } from '@nestjs/common';
 import type { CurrentUser as CurrentUserType } from '../types/index.js';
 import { AuthService } from './auth.service';
