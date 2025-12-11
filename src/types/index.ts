@@ -1,64 +1,28 @@
-/**
- * Tipos compartidos de la aplicación
- * (Consolidado desde packages/types para proyecto standalone)
- */
+// Re-export Prisma types (single source of truth)
+import { Role } from '@prisma/client';
+export { Role };
+export type { User } from '@prisma/client';
 
-// ============================================
-// ENUMS
-// ============================================
-
-export type Role = 'USER' | 'ADMIN';
-
-// ============================================
-// ENTITIES
-// ============================================
-
-export interface Usuario {
-  id: number;
-  email: string;
-  nombre: string;
-  role: Role;
-  activo: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-// ============================================
-// AUTH DTOs
-// ============================================
-
-export interface LoginDto {
-  email: string;
-  password: string;
-}
-
-export interface CreateUsuarioDto {
-  email: string;
-  password: string;
-  nombre: string;
-  role: Role;
-}
-
-// JWT Payload (lo que va dentro del token)
+// JWT payload (inside the token)
 export interface JwtPayload {
   sub: number;
   email: string;
 }
 
-// Usuario actual extraído del JWT (adjuntado a request.user)
+// Current user extracted from JWT (attached to request.user)
 export interface CurrentUser {
   id: number;
   email: string;
-  nombre: string;
+  name: string;
   role: Role;
 }
 
-// Respuesta de login/register
+// Auth response
 export interface AuthResponse {
   user: {
     id: number;
     email: string;
-    nombre: string;
+    name: string;
     role: Role;
   };
   token: string;
