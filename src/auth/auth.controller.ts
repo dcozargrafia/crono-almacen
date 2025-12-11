@@ -27,7 +27,7 @@ export class AuthController {
   }
 
   // GET /auth/profile - Get current user profile
-  @Get('getProfile')
+  @Get('profile')
   @UseGuards(JwtAuthGuard)
   getProfile(@CurrentUser() user: CurrentUserType) {
     return user;

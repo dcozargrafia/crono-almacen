@@ -3,33 +3,52 @@ import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
-async function main() {
-  const adminEmail = process.env.ADMIN_EMAIL || 'admin@admin.com';
-  const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
-  const adminName = 'Administrator';
-  
-  const existingAdmin = await prisma.user.findUnique({
-    where: { email: adminEmail },
+async function createUser(
+  email: string,
+  password: string,
+  name: string,
+  role: 'ADMIN' | 'USER',
+) {
+  const existingUser = await prisma.user.findUnique({
+    where: { email },
   });
 
-  if (existingAdmin) {
-    console.log(`Admin user already exists: ${adminEmail}.`);
+  if (existingUser) {
+    console.log(`User already exists: ${email}`);
     return;
   }
 
-  const hashedPassword = await bcrypt.hash(adminPassword, 10);
+  const hashedPassword = await bcrypt.hash(password, 10);
 
-  const adminUser = await prisma.user.create({
+  await prisma.user.create({
     data: {
-      email: adminEmail,
+      email,
       password: hashedPassword,
-      name: adminName,
-      role: 'ADMIN',
+      name,
+      role,
       active: true,
     },
   });
 
-  console.log(`Admin user created: ${adminEmail} / ${adminPassword}`);
+  console.log(`User created: ${email} / ${password} (${role})`);
+}
+
+async function main() {
+  // Admin user
+  await createUser(
+    process.env.SEED_ADMIN_EMAIL || 'admin@crono.com',
+    process.env.SEED_ADMIN_PASSWORD || 'admin123',
+    process.env.SEED_ADMIN_NAME || 'Administrator',
+    'ADMIN',
+  );
+
+  // Regular user
+  await createUser(
+    process.env.SEED_USER_EMAIL || 'user@crono.com',
+    process.env.SEED_USER_PASSWORD || 'user123',
+    process.env.SEED_USER_NAME || 'Regular User',
+    'USER',
+  );
 }
 
 main()
