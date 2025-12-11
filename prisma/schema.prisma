@@ -9,18 +9,18 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Usuario {
+model User {
   id       Int     @id @default(autoincrement())
   email    String  @unique
   password String
-  nombre   String
+  name   String
   role     Role    @default(USER)
-  activo   Boolean @default(true)
+  active   Boolean @default(true)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@map("usuarios")
+  @@map("users")
 }
 
 

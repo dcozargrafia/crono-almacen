@@ -1,64 +1,52 @@
-/**
- * Tipos compartidos de la aplicación
- * (Consolidado desde packages/types para proyecto standalone)
- */
+// Shared application types
 
-// ============================================
-// ENUMS
-// ============================================
-
+// Enums
 export type Role = 'USER' | 'ADMIN';
 
-// ============================================
-// ENTITIES
-// ============================================
-
-export interface Usuario {
+// Entities
+export interface User {
   id: number;
   email: string;
-  nombre: string;
+  name: string;
   role: Role;
-  activo: boolean;
+  active: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
 
-// ============================================
-// AUTH DTOs
-// ============================================
-
+// Auth DTOs
 export interface LoginDto {
   email: string;
   password: string;
 }
 
-export interface CreateUsuarioDto {
+export interface CreateUserDto {
   email: string;
   password: string;
-  nombre: string;
+  name: string;
   role: Role;
 }
 
-// JWT Payload (lo que va dentro del token)
+// JWT payload (inside the token)
 export interface JwtPayload {
   sub: number;
   email: string;
 }
 
-// Usuario actual extraído del JWT (adjuntado a request.user)
+// Current user extracted from JWT (attached to request.user)
 export interface CurrentUser {
   id: number;
   email: string;
-  nombre: string;
+  name: string;
   role: Role;
 }
 
-// Respuesta de login/register
+// Login/register response
 export interface AuthResponse {
   user: {
     id: number;
     email: string;
-    nombre: string;
+    name: string;
     role: Role;
   };
   token: string;

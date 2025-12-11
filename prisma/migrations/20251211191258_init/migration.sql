@@ -15,18 +15,5 @@ CREATE TABLE "usuarios" (
     CONSTRAINT "usuarios_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "clientes" (
-    "id" SERIAL NOT NULL,
-    "idSportmaniacs" INTEGER,
-    "nombre" TEXT NOT NULL,
-    "email" TEXT,
-    "telefono" TEXT,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "clientes_pkey" PRIMARY KEY ("id")
-);
-
 -- CreateIndex
 CREATE UNIQUE INDEX "usuarios_email_key" ON "usuarios"("email");
