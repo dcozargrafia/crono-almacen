@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { AuthService } from './auth.service';
 import { PrismaService } from '../prisma.service';
+import { Role } from '@prisma/client';
 
 // Mock implementations
 const mockPrismaService = {
@@ -22,7 +23,7 @@ const createMockUser = async (overrides = {}) => ({
   email: 'test@test.com',
   password: await bcrypt.hash('password123', 10),
   name: 'Test User',
-  role: 'USER',
+  role: 'USER' as Role,
   active: true,
   createdAt: new Date(),
   updatedAt: new Date(),
