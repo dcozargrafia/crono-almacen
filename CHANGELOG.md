@@ -9,10 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Client and Device models in database schema
+  - Client: companies/event organizers that own devices
+  - Device: timing devices with manufacturing and operational status
+- New enums: DeviceModel, ManufacturingStatus, OperationalStatus, FrequencyRegion
+- Seed data: Cronochip as internal client
+
 ### Planned
-- Device module (timing devices management)
+- Device module (CRUD endpoints)
 - Product module (rental equipment)
-- Client module
 - Rental module
 
 ---
