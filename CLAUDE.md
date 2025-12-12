@@ -54,12 +54,20 @@ After completing a module, feature, or test suite:
 3. Refactor only if it makes code cleaner WITHOUT adding complexity
 4. Don't over-engineer - keep it understandable
 
-### Documentation Reminders
-Proactively remind Dani to update documentation when:
-- A new module/feature is completed → Update README.md (endpoints, structure)
-- New environment variables are added → Update README.md and .env.example
-- Session ends → Update SESSION_LOG.md
-- Major architectural decisions → Consider if CLAUDE.md needs updates
+### Documentation Phase (MANDATORY)
+After completing any module, feature, refactoring, or significant change:
+
+1. **Review and update documentation** - This is NOT optional
+2. **Checklist:**
+   - [ ] `docs/API.md` - New/changed endpoints?
+   - [ ] `docs/DATABASE.md` - Schema changes?
+   - [ ] `docs/ARCHITECTURE.md` - New patterns or decisions?
+   - [ ] `CHANGELOG.md` - Add to [Unreleased] section
+   - [ ] `README.md` - Setup or usage changes?
+   - [ ] `.env.example` - New environment variables?
+   - [ ] `SESSION_LOG.md` - Update at session end
+
+3. **Proactively ask Dani**: "¿Actualizamos la documentación?" before closing a feature
 
 ---
 

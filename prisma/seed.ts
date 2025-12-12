@@ -33,7 +33,31 @@ async function createUser(
   console.log(`User created: ${email} / ${password} (${role})`);
 }
 
+async function createClient(name: string, codeSportmaniacs?: string) {
+  const existingClient = await prisma.client.findFirst({
+    where: { name },
+  });
+
+  if (existingClient) {
+    console.log(`Client already exists: ${name}`);
+    return;
+  }
+
+  await prisma.client.create({
+    data: {
+      name,
+      codeSportmaniacs,
+      active: true,
+    },
+  });
+
+  console.log(`Client created: ${name}`);
+}
+
 async function main() {
+  // Internal client (Cronochip owns devices for rental)
+  await createClient('Cronochip');
+
   // Admin user
   await createUser(
     process.env.SEED_ADMIN_EMAIL || 'admin@crono.com',

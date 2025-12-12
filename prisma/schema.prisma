@@ -1,5 +1,3 @@
-
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,13 +7,53 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// User roles
+enum Role {
+  USER
+  ADMIN
+}
+
+// Device manufacturing and operational status
+enum DeviceModel {
+  TSONE
+  TS2
+  TS2_PLUS  // TS2+ (Prisma doesn't allow + in names)
+  CLB
+}
+
+enum ManufacturingStatus {
+  PENDING           // Not started
+  IN_PROGRESS       // Being manufactured
+  PHASE1_COMPLETED  // First phase done
+  AWAITING_QA       // Waiting for quality check
+  COMPLETED         // Finished
+  OUT_OF_STOCK      // Missing parts
+}
+
+enum OperationalStatus {
+  IN_MANUFACTURING  // Still being built
+  AVAILABLE         // Ready to rent/sell
+  RENTED            // Currently rented
+  SOLD              // Sold to client
+  IN_REPAIR         // Under maintenance
+  RETIRED           // No longer in use
+}
+
+enum FrequencyRegion {
+  EU
+  FCC
+  GX1
+  GX2
+}
+
+// System user with JWT authentication
 model User {
-  id       Int     @id @default(autoincrement())
-  email    String  @unique
-  password String
-  name   String
-  role     Role    @default(USER)
-  active   Boolean @default(true)
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String   // bcrypt hash (10 rounds)
+  name      String
+  role      Role     @default(USER)
+  active    Boolean  @default(true)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -23,8 +61,76 @@ model User {
   @@map("users")
 }
 
+// Client that owns or rents devices
+model Client {
+  id               Int      @id @default(autoincrement())
+  name             String
+  codeSportmaniacs String?  @unique  // ID in Sportmaniacs platform
+  email            String?
+  active           Boolean  @default(true)
 
-enum Role {
-  USER
-  ADMIN
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  devices Device[]
+
+  @@map("clients")
+}
+
+// Timing device manufactured in-house
+model Device {
+  id Int @id @default(autoincrement())
+
+  // Identification (required)
+  model             DeviceModel
+  manufacturingCode String      @unique  // Assigned at start of manufacturing
+
+  // Status (required with defaults)
+  manufacturingStatus ManufacturingStatus @default(PENDING)
+  operationalStatus   OperationalStatus   @default(IN_MANUFACTURING)
+  availableForRental  Boolean             @default(false)
+
+  // Owner - Client who owns the device (optional until sold)
+  ownerId Int?
+  owner   Client? @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+
+  // Additional identification (optional)
+  serialNumber String? @unique  // Assigned when sold, format varies
+  portCount    Int?             // Number of ports (for TS2, TS2+)
+
+  // Regional configuration (optional)
+  frequencyRegion FrequencyRegion?
+
+  // Metadata (optional)
+  manufacturingDate DateTime?
+  notes             String?
+
+  // TSONE/TS2/TS2+ specific fields (optional)
+  reader1SerialNumber String?
+  reader2SerialNumber String?
+  cpuSerialNumber     String?
+  batterySerialNumber String?
+  tsPowerModel        String?
+  cpuFirmware         String?
+  gx1ReadersRegion    String?
+  hasGSM              Boolean?
+  hasGUN              Boolean?
+
+  // CLB specific fields (optional)
+  bluetoothAdapter String?
+  coreVersion      String?
+  heatsinks        String?
+  picVersion       String?
+
+  // Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Indexes
+  @@index([model])
+  @@index([manufacturingStatus])
+  @@index([operationalStatus])
+  @@index([availableForRental])
+
+  @@map("devices")
 }
