@@ -33,7 +33,7 @@ async function createUser(
   console.log(`User created: ${email} / ${password} (${role})`);
 }
 
-async function createClient(name: string, codeSportmaniacs?: string) {
+async function createClient(name: string, codeSportmaniacs?: number) {
   const existingClient = await prisma.client.findFirst({
     where: { name },
   });
@@ -56,7 +56,7 @@ async function createClient(name: string, codeSportmaniacs?: string) {
 
 async function main() {
   // Internal client (Cronochip owns devices for rental)
-  await createClient('Cronochip');
+  await createClient('Cronochip', 1);
 
   // Admin user
   await createUser(

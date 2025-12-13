@@ -86,15 +86,40 @@ Implement user management system and learn unit testing.
 - `expect().toEqual()`, `expect().rejects.toThrow()`, `toHaveBeenCalledWith()`
 
 ### Pending / Next Session
-- [ ] Write tests for UsersService
-- [ ] Design data model for Devices
-- [ ] Discuss relationships between entities
-- [ ] Start implementing Device module
+- [x] Write tests for UsersService (completed)
+- [x] Design data model for Devices (completed - added Client and Device models)
+- [ ] Implement Clients module
+- [ ] Implement Devices module
 
-### Questions / Doubts (carried over)
-- Device serial number format to define
-- Can a device be in multiple rentals simultaneously?
-- What states can a device have? (available, rented, sold, in repair, retired?)
+### Questions / Doubts (resolved)
+- Device serial number format: String, no fixed format (varies by model)
+- Device states: Defined as OperationalStatus enum (IN_MANUFACTURING, AVAILABLE, RENTED, SOLD, IN_REPAIR, RETIRED)
+
+---
+
+## Session 3 - 2024-12-13
+
+### Objective
+Implement Clients module with full CRUD.
+
+### Completed
+- [x] Updated SESSION_LOG with correct status from session 2
+- [ ] Implement Clients module (controller, service, DTOs)
+- [ ] Write tests for ClientsService
+- [ ] Update documentation
+
+### Decisions Made
+- Serial number format: Free-form string (varies by device model)
+
+### Notes
+- Models Client and Device already exist in Prisma schema
+- Client has relation to Device (one-to-many: a client can own multiple devices)
+
+### Pending / Next Session
+- (to be filled at end of session)
+
+### Questions / Doubts
+- (none so far)
 
 ---
 

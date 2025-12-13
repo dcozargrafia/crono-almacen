@@ -1,4 +1,7 @@
 -- CreateEnum
+CREATE TYPE "Role" AS ENUM ('USER', 'ADMIN');
+
+-- CreateEnum
 CREATE TYPE "DeviceModel" AS ENUM ('TSONE', 'TS2', 'TS2_PLUS', 'CLB');
 
 -- CreateEnum
@@ -11,10 +14,24 @@ CREATE TYPE "OperationalStatus" AS ENUM ('IN_MANUFACTURING', 'AVAILABLE', 'RENTE
 CREATE TYPE "FrequencyRegion" AS ENUM ('EU', 'FCC', 'GX1', 'GX2');
 
 -- CreateTable
+CREATE TABLE "users" (
+    "id" SERIAL NOT NULL,
+    "email" TEXT NOT NULL,
+    "password" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "role" "Role" NOT NULL DEFAULT 'USER',
+    "active" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "users_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "clients" (
     "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
-    "codeSportmaniacs" TEXT,
+    "codeSportmaniacs" INTEGER,
     "email" TEXT,
     "active" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -55,6 +72,9 @@ CREATE TABLE "devices" (
 
     CONSTRAINT "devices_pkey" PRIMARY KEY ("id")
 );
+
+-- CreateIndex
+CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "clients_codeSportmaniacs_key" ON "clients"("codeSportmaniacs");

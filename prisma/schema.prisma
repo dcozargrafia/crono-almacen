@@ -65,7 +65,7 @@ model User {
 model Client {
   id               Int      @id @default(autoincrement())
   name             String
-  codeSportmaniacs String?  @unique  // ID in Sportmaniacs platform
+  codeSportmaniacs Int?  @unique  // ID in Sportmaniacs platform
   email            String?
   active           Boolean  @default(true)
 
