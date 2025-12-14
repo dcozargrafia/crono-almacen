@@ -44,6 +44,12 @@ crono-almacen/
 │   │   ├── users.module.ts
 │   │   ├── users.service.ts
 │   │   └── users.service.spec.ts
+│   ├── clients/            # Client management module
+│   │   ├── dto/            # CreateClientDto, UpdateClientDto, QueryClientsDto
+│   │   ├── clients.controller.ts
+│   │   ├── clients.module.ts
+│   │   ├── clients.service.ts
+│   │   └── clients.service.spec.ts
 │   ├── types/              # Shared TypeScript types
 │   │   ├── index.ts        # Re-exports from Prisma + app types
 │   │   └── express.d.ts    # Express type augmentation
@@ -192,6 +198,8 @@ throw new ConflictException('EMAIL_ALREADY_EXISTS');
 | `USER_UNAUTHORIZED` | 401 | Invalid/expired token |
 | `EMAIL_ALREADY_EXISTS` | 409 | Email taken |
 | `INVALID_CURRENT_PASSWORD` | 401 | Wrong current password |
+| `CLIENT_NOT_FOUND` | 404 | Client doesn't exist |
+| `CODE_SPORTMANIACS_ALREADY_EXISTS` | 409 | Sportmaniacs code taken |
 
 ---
 
