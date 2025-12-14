@@ -114,7 +114,10 @@ Implement Clients module with full CRUD using TDD.
   - remove() - soft delete
   - reactivate() - restore soft-deleted client
 - [x] Implemented ClientsController with all endpoints
-- [x] Updated API documentation
+- [x] Added pagination to findAll() endpoint
+  - Created QueryClientsDto for query params
+  - Response format: { data, meta: { total, page, limit, totalPages } }
+- [x] Updated API documentation and CHANGELOG
 
 ### Decisions Made
 - **findAll() filter**: Query param `?active=true|false|all` instead of always returning active only

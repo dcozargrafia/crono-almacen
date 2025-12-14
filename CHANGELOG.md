@@ -10,6 +10,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Client management module (CRUD for authenticated users)
+  - `POST /clients` - Create client
+  - `GET /clients` - List clients (with pagination and active filter)
+  - `GET /clients/:id` - Get client
+  - `GET /clients/sportmaniacs/:code` - Find by Sportmaniacs code
+  - `PATCH /clients/:id` - Update client
+  - `PATCH /clients/:id/reactivate` - Reactivate soft-deleted client
+  - `DELETE /clients/:id` - Soft delete client
+- Pagination support for `GET /clients` endpoint
+  - Query params: `page`, `limit`, `active`
+  - Response includes `meta` object with total, page, limit, totalPages
+- Unit tests for ClientsService (15 tests with TDD)
 - Client and Device models in database schema
   - Client: companies/event organizers that own devices
   - Device: timing devices with manufacturing and operational status
