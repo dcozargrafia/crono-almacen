@@ -261,3 +261,4 @@ src/
 ├── common/           # Shared guards, decorators, etc.
 └── types/            # Shared TypeScript types
 ```
+- Recuerda siempre actualizar todos los docs del proyecto al finalizar una sesión, sección o implementación con cambio importante
