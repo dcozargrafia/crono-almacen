@@ -97,29 +97,58 @@ Implement user management system and learn unit testing.
 
 ---
 
-## Session 3 - 2024-12-13
+## Session 3 - 2024-12-13/14
 
 ### Objective
-Implement Clients module with full CRUD.
+Implement Clients module with full CRUD using TDD.
 
 ### Completed
-- [x] Updated SESSION_LOG with correct status from session 2
-- [ ] Implement Clients module (controller, service, DTOs)
-- [ ] Write tests for ClientsService
-- [ ] Update documentation
+- [x] Learned TDD methodology (Red-Green-Refactor cycle)
+- [x] Created CreateClientDto with validations
+- [x] Implemented ClientsService with TDD (15 tests total):
+  - create() - with codeSportmaniacs duplicate validation
+  - findAll() - with optional active filter (true/false/all)
+  - findOne() - with NotFoundException
+  - findByCodeSportmaniacs() - new endpoint
+  - update() - with duplicate validation
+  - remove() - soft delete
+  - reactivate() - restore soft-deleted client
+- [x] Implemented ClientsController with all endpoints
+- [x] Added pagination to findAll() endpoint
+  - Created QueryClientsDto for query params
+  - Response format: { data, meta: { total, page, limit, totalPages } }
+- [x] Updated API documentation and CHANGELOG
 
 ### Decisions Made
-- Serial number format: Free-form string (varies by device model)
+- **findAll() filter**: Query param `?active=true|false|all` instead of always returning active only
+- **Endpoint for reactivate**: Separate `PATCH /clients/:id/reactivate` instead of adding `active` to UpdateDto
+- **Access control**: All authenticated users can manage clients (no ADMIN restriction for now)
+- **TDD pragmatic approach**: Define DTOs first since schema is known, focus TDD on service logic
 
-### Notes
-- Models Client and Device already exist in Prisma schema
-- Client has relation to Device (one-to-many: a client can own multiple devices)
+### TDD Concepts Learned
+- Red-Green-Refactor cycle
+- Write test FIRST, then minimal code to pass
+- `mockResolvedValueOnce()` for sequential mock returns
+- Tests should be decoupled from implementation (use object literals, not DTO types)
+- ZOMBIES technique for identifying test cases
+
+### API Endpoints (Clients)
+| Method | Endpoint | Description | Access |
+|--------|----------|-------------|--------|
+| POST | /clients | Create client | Authenticated |
+| GET | /clients | List clients (filter: ?active=true/false/all) | Authenticated |
+| GET | /clients/:id | Get client | Authenticated |
+| GET | /clients/sportmaniacs/:code | Find by Sportmaniacs code | Authenticated |
+| PATCH | /clients/:id | Update client | Authenticated |
+| PATCH | /clients/:id/reactivate | Reactivate client | Authenticated |
+| DELETE | /clients/:id | Soft delete client | Authenticated |
 
 ### Pending / Next Session
-- (to be filled at end of session)
+- [ ] Implement Devices module
+- [ ] Consider adding pagination to findAll()
 
 ### Questions / Doubts
-- (none so far)
+- (none)
 
 ---
 
