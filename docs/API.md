@@ -269,6 +269,226 @@ Soft delete user (sets `active: false`).
 
 ---
 
+### Clients
+
+All `/clients` endpoints require authentication.
+
+#### POST /clients
+
+Create a new client.
+
+**Access:** Authenticated
+
+**Request Body:**
+```json
+{
+  "name": "Acme Sports",
+  "codeSportmaniacs": 12345,
+  "email": "contact@acme.com"
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| name | string | Yes | Client name |
+| codeSportmaniacs | number | No | Unique Sportmaniacs platform ID |
+| email | string | No | Contact email |
+
+**Response (201):**
+```json
+{
+  "id": 1,
+  "name": "Acme Sports",
+  "codeSportmaniacs": 12345,
+  "email": "contact@acme.com",
+  "active": true,
+  "createdAt": "2024-12-14T10:00:00.000Z",
+  "updatedAt": "2024-12-14T10:00:00.000Z"
+}
+```
+
+**Errors:**
+| Code | Error Key | Description |
+|------|-----------|-------------|
+| 409 | `CODE_SPORTMANIACS_ALREADY_EXISTS` | Sportmaniacs code already registered |
+
+---
+
+#### GET /clients
+
+List clients with pagination and optional active filter.
+
+**Access:** Authenticated
+
+**Query Parameters:**
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| page | number | `1` | Page number (min: 1) |
+| limit | number | `10` | Items per page (min: 1) |
+| active | string | `true` | Filter: `true`, `false`, or `all` |
+
+**Examples:**
+- `GET /clients` - First 10 active clients
+- `GET /clients?page=2&limit=5` - Page 2, 5 items per page
+- `GET /clients?active=false` - Inactive clients
+- `GET /clients?active=all` - All clients
+
+**Response (200):**
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "name": "Acme Sports",
+      "codeSportmaniacs": 12345,
+      "email": "contact@acme.com",
+      "active": true,
+      "createdAt": "2024-12-14T10:00:00.000Z",
+      "updatedAt": "2024-12-14T10:00:00.000Z"
+    }
+  ],
+  "meta": {
+    "total": 25,
+    "page": 1,
+    "limit": 10,
+    "totalPages": 3
+  }
+}
+```
+
+---
+
+#### GET /clients/:id
+
+Get a specific client by ID.
+
+**Access:** Authenticated
+
+**Response (200):**
+```json
+{
+  "id": 1,
+  "name": "Acme Sports",
+  "codeSportmaniacs": 12345,
+  "email": "contact@acme.com",
+  "active": true,
+  "createdAt": "2024-12-14T10:00:00.000Z",
+  "updatedAt": "2024-12-14T10:00:00.000Z"
+}
+```
+
+**Errors:**
+| Code | Error Key | Description |
+|------|-----------|-------------|
+| 404 | `CLIENT_NOT_FOUND` | Client does not exist |
+
+---
+
+#### GET /clients/sportmaniacs/:code
+
+Find client by Sportmaniacs code.
+
+**Access:** Authenticated
+
+**Response (200):**
+```json
+{
+  "id": 1,
+  "name": "Acme Sports",
+  "codeSportmaniacs": 12345,
+  "email": "contact@acme.com",
+  "active": true,
+  "createdAt": "2024-12-14T10:00:00.000Z",
+  "updatedAt": "2024-12-14T10:00:00.000Z"
+}
+```
+
+**Errors:**
+| Code | Error Key | Description |
+|------|-----------|-------------|
+| 404 | `CLIENT_NOT_FOUND` | Client with this code does not exist |
+
+---
+
+#### PATCH /clients/:id
+
+Update client data.
+
+**Access:** Authenticated
+
+**Request Body:**
+```json
+{
+  "name": "Updated Name",
+  "codeSportmaniacs": 54321,
+  "email": "new@email.com"
+}
+```
+
+All fields are optional.
+
+**Response (200):**
+```json
+{
+  "id": 1,
+  "name": "Updated Name",
+  "codeSportmaniacs": 54321,
+  "email": "new@email.com",
+  "active": true,
+  "createdAt": "2024-12-14T10:00:00.000Z",
+  "updatedAt": "2024-12-14T11:00:00.000Z"
+}
+```
+
+**Errors:**
+| Code | Error Key | Description |
+|------|-----------|-------------|
+| 404 | `CLIENT_NOT_FOUND` | Client does not exist |
+| 409 | `CODE_SPORTMANIACS_ALREADY_EXISTS` | Sportmaniacs code already taken |
+
+---
+
+#### PATCH /clients/:id/reactivate
+
+Reactivate a soft-deleted client.
+
+**Access:** Authenticated
+
+**Response (200):**
+```json
+{
+  "id": 1,
+  "name": "Acme Sports",
+  "codeSportmaniacs": 12345,
+  "email": "contact@acme.com",
+  "active": true,
+  "createdAt": "2024-12-14T10:00:00.000Z",
+  "updatedAt": "2024-12-14T12:00:00.000Z"
+}
+```
+
+**Errors:**
+| Code | Error Key | Description |
+|------|-----------|-------------|
+| 404 | `CLIENT_NOT_FOUND` | Client does not exist |
+
+---
+
+#### DELETE /clients/:id
+
+Soft delete client (sets `active: false`).
+
+**Access:** Authenticated
+
+**Response:** 204 No Content
+
+**Errors:**
+| Code | Error Key | Description |
+|------|-----------|-------------|
+| 404 | `CLIENT_NOT_FOUND` | Client does not exist |
+
+---
+
 ## Error Response Format
 
 All errors follow this structure:

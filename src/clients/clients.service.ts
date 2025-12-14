@@ -31,10 +31,43 @@ export class ClientsService {
     });
   }
 
-  // GET /clients - List clients with optional active filter
-  async findAll(active: boolean | 'all' = true) {
-    const where = active === 'all' ? {} : { active };
-    return this.prisma.client.findMany({ where });
+  // GET /clients - List clients with pagination and optional active filter
+  async findAll(
+    options: { page?: number; limit?: number; active?: string } = {},
+  ) {
+    const { page = 1, limit = 10, active = 'true' } = options;
+
+    // Build where clause
+    let where = {};
+    if (active === 'true') {
+      where = { active: true };
+    } else if (active === 'false') {
+      where = { active: false };
+    }
+    // active === 'all' → where stays {}
+
+    // Calculate pagination
+    const skip = (page - 1) * limit;
+
+    // Execute queries in parallel
+    const [data, total] = await Promise.all([
+      this.prisma.client.findMany({
+        where,
+        skip,
+        take: limit,
+      }),
+      this.prisma.client.count({ where }),
+    ]);
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   // GET /clients/:id Get client by id
@@ -73,7 +106,7 @@ export class ClientsService {
     });
   }
 
-  // DELET /clients/:id - Soft delete client
+  // DELETE /clients/:id - Soft delete client
   async remove(id: number) {
     await this.findOne(id); // Throws if not found
 
@@ -94,5 +127,15 @@ export class ClientsService {
     }
 
     return client;
+  }
+
+  // PATCH /clients/:id/reactivate - Reactivate soft-deleted client
+  async reactivate(id: number) {
+    await this.findOne(id); // Throws if not found
+
+    return this.prisma.client.update({
+      where: { id },
+      data: { active: true },
+    });
   }
 }

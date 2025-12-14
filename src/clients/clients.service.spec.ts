@@ -7,6 +7,7 @@ const mockPrismaService = {
   client: {
     findUnique: jest.fn(),
     findMany: jest.fn(),
+    count: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
@@ -88,40 +89,50 @@ describe('ClientsService', () => {
   });
 
   describe('findAll', () => {
-    it('should return only active clients by default', async () => {
+    it('should return paginated active clients by default', async () => {
       // Arrange
       const activeClients = [
         createMockClient({ id: 1, name: 'Client A' }),
         createMockClient({ id: 2, name: 'Client B' }),
       ];
       mockPrismaService.client.findMany.mockResolvedValue(activeClients);
+      mockPrismaService.client.count.mockResolvedValue(2);
 
       // Act
       const result = await service.findAll();
 
       // Assert
-      expect(result).toEqual(activeClients);
+      expect(result.data).toEqual(activeClients);
+      expect(result.meta).toEqual({
+        total: 2,
+        page: 1,
+        limit: 10,
+        totalPages: 1,
+      });
       expect(mockPrismaService.client.findMany).toHaveBeenCalledWith({
-        where: {
-          active: true,
-        },
+        where: { active: true },
+        skip: 0,
+        take: 10,
       });
     });
 
-    it('should return only inactive clients when active is false', async () => {
+    it('should return inactive clients when active is false', async () => {
       // Arrange
       const inactiveClients = [
         createMockClient({ id: 3, name: 'Inactive Client', active: false }),
       ];
       mockPrismaService.client.findMany.mockResolvedValue(inactiveClients);
+      mockPrismaService.client.count.mockResolvedValue(1);
 
       // Act
-      const result = await service.findAll(false);
+      const result = await service.findAll({ active: 'false' });
 
       // Assert
-      expect(result).toEqual(inactiveClients);
+      expect(result.data).toEqual(inactiveClients);
       expect(mockPrismaService.client.findMany).toHaveBeenCalledWith({
         where: { active: false },
+        skip: 0,
+        take: 10,
       });
     });
 
@@ -132,14 +143,40 @@ describe('ClientsService', () => {
         createMockClient({ id: 2, active: false }),
       ];
       mockPrismaService.client.findMany.mockResolvedValue(allClients);
+      mockPrismaService.client.count.mockResolvedValue(2);
 
       // Act
-      const result = await service.findAll('all');
+      const result = await service.findAll({ active: 'all' });
 
       // Assert
-      expect(result).toEqual(allClients);
+      expect(result.data).toEqual(allClients);
       expect(mockPrismaService.client.findMany).toHaveBeenCalledWith({
         where: {},
+        skip: 0,
+        take: 10,
+      });
+    });
+
+    it('should paginate correctly on page 2', async () => {
+      // Arrange
+      const clientsPage2 = [createMockClient({ id: 11, name: 'Client 11' })];
+      mockPrismaService.client.findMany.mockResolvedValue(clientsPage2);
+      mockPrismaService.client.count.mockResolvedValue(15);
+
+      // Act
+      const result = await service.findAll({ page: 2, limit: 10 });
+
+      // Assert
+      expect(result.meta).toEqual({
+        total: 15,
+        page: 2,
+        limit: 10,
+        totalPages: 2,
+      });
+      expect(mockPrismaService.client.findMany).toHaveBeenCalledWith({
+        where: { active: true },
+        skip: 10,
+        take: 10,
       });
     });
   });
@@ -249,6 +286,32 @@ describe('ClientsService', () => {
       await expect(service.findByCodeSportmaniacs(123)).rejects.toThrow(
         'CLIENT_NOT_FOUND',
       );
+    });
+  });
+
+  describe('reactivate', () => {
+    it('should reactivate client by setting active to true', async () => {
+      // Arrange
+      const existingClient = createMockClient({ id: 1 });
+      mockPrismaService.client.findUnique.mockResolvedValue(existingClient); // Client exists
+      mockPrismaService.client.update.mockResolvedValue(existingClient);
+
+      // Act
+      await service.reactivate(1);
+
+      // Assert
+      expect(mockPrismaService.client.update).toHaveBeenCalledWith({
+        where: { id: 1 },
+        data: { active: true },
+      });
+    });
+
+    it('should throw NotFoundException if client does not exist', async () => {
+      // Arrange
+      mockPrismaService.client.findUnique.mockResolvedValue(null); // Client does not exist
+
+      // Act & Assert
+      await expect(service.reactivate(999)).rejects.toThrow('CLIENT_NOT_FOUND');
     });
   });
 });
