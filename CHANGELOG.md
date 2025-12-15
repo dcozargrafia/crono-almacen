@@ -10,6 +10,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Device management module (CRUD for authenticated users)
+  - `POST /devices` - Create device
+  - `GET /devices` - List devices (with pagination and filters)
+  - `GET /devices/:id` - Get device
+  - `GET /devices/reader/:serial` - Find by reader serial number
+  - `GET /devices/cpu/:serial` - Find by CPU serial number
+  - `GET /devices/battery/:serial` - Find by battery serial number
+  - `PATCH /devices/:id` - Update device
+  - `PATCH /devices/:id/manufactoring-status` - Update manufacturing status
+  - `PATCH /devices/:id/operational-status` - Update operational status
+  - `PATCH /devices/:id/owner` - Assign/remove owner
+  - `DELETE /devices/:id` - Retire device (soft delete)
+- Pagination and filters for `GET /devices` endpoint
+  - Query params: `page`, `pageSize`, `model`, `manufactoringStatus`, `operationalStatus`, `availableForRental`, `ownerId`
+- Unit tests for DevicesService (29 tests with TDD)
 - Client management module (CRUD for authenticated users)
   - `POST /clients` - Create client
   - `GET /clients` - List clients (with pagination and active filter)
@@ -19,17 +34,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `PATCH /clients/:id/reactivate` - Reactivate soft-deleted client
   - `DELETE /clients/:id` - Soft delete client
 - Pagination support for `GET /clients` endpoint
-  - Query params: `page`, `limit`, `active`
-  - Response includes `meta` object with total, page, limit, totalPages
+  - Query params: `page`, `pageSize`, `active`
+  - Response includes `meta` object with total, page, pageSize, totalPages
 - Unit tests for ClientsService (15 tests with TDD)
 - Client and Device models in database schema
   - Client: companies/event organizers that own devices
   - Device: timing devices with manufacturing and operational status
-- New enums: DeviceModel, ManufacturingStatus, OperationalStatus, FrequencyRegion
+- New enums: DeviceModel, ManufactoringStatus, OperationalStatus, FrequencyRegion
 - Seed data: Cronochip as internal client
 
 ### Planned
-- Device module (CRUD endpoints)
 - Product module (rental equipment)
 - Rental module
 

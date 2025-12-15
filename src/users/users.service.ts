@@ -33,8 +33,8 @@ export class UsersService {
       },
     });
 
-    // Never return password
-    const { password, ...result } = user;
+    // Exclude password from response (underscore indicates intentionally unused)
+    const { password: _, ...result } = user;
     return result;
   }
 

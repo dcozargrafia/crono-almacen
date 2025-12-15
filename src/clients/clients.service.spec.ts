@@ -106,7 +106,7 @@ describe('ClientsService', () => {
       expect(result.meta).toEqual({
         total: 2,
         page: 1,
-        limit: 10,
+        pageSize: 10,
         totalPages: 1,
       });
       expect(mockPrismaService.client.findMany).toHaveBeenCalledWith({
@@ -164,13 +164,13 @@ describe('ClientsService', () => {
       mockPrismaService.client.count.mockResolvedValue(15);
 
       // Act
-      const result = await service.findAll({ page: 2, limit: 10 });
+      const result = await service.findAll({ page: 2, pageSize: 10 });
 
       // Assert
       expect(result.meta).toEqual({
         total: 15,
         page: 2,
-        limit: 10,
+        pageSize: 10,
         totalPages: 2,
       });
       expect(mockPrismaService.client.findMany).toHaveBeenCalledWith({

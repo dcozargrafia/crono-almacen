@@ -12,7 +12,7 @@ export class QueryClientsDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  limit?: number = 10;
+  pageSize?: number = 10;
 
   @IsOptional()
   @IsIn(['true', 'false', 'all'])

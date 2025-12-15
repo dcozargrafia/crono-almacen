@@ -97,9 +97,9 @@ describe('UsersService', () => {
         createMockUser({ id: 2 }),
       ];
 
-      // Simulate Prisma select by omitting password
+      // Simulate Prisma select by omitting password (underscore = intentionally unused)
       const usersWithoutPassword = usersFromDb.map(
-        ({ password, ...user }) => user,
+        ({ password: _, ...user }) => user,
       );
 
       mockPrismaService.user.findMany.mockResolvedValue(usersWithoutPassword);
@@ -120,8 +120,8 @@ describe('UsersService', () => {
       // Arrange
       const userFromDb = createMockUser({ id: 1 });
 
-      // Simulate Prisma select by omitting password
-      const { password, ...userWithoutPassword } = userFromDb;
+      // Simulate Prisma select by omitting password (underscore = intentionally unused)
+      const { password: _, ...userWithoutPassword } = userFromDb;
 
       mockPrismaService.user.findUnique.mockResolvedValue(userWithoutPassword);
 
@@ -149,8 +149,8 @@ describe('UsersService', () => {
       const existingUser = createMockUser({ id: 1 });
       const updatedUser = { ...existingUser, ...dto };
 
-      // Simulate Prisma select by omitting password
-      const { password, ...updatedUserWithoutPassword } = updatedUser;
+      // Simulate Prisma select by omitting password (underscore = intentionally unused)
+      const { password: _, ...updatedUserWithoutPassword } = updatedUser;
 
       mockPrismaService.user.findUnique.mockResolvedValue(existingUser); // User exists
       mockPrismaService.user.update.mockResolvedValue(

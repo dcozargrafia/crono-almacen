@@ -144,8 +144,71 @@ Implement Clients module with full CRUD using TDD.
 | DELETE | /clients/:id | Soft delete client | Authenticated |
 
 ### Pending / Next Session
-- [ ] Implement Devices module
-- [ ] Consider adding pagination to findAll()
+- Completed in Session 4
+
+### Questions / Doubts
+- (none)
+
+---
+
+## Session 4 - 2024-12-15
+
+### Objective
+Implement Devices module with full CRUD using TDD.
+
+### Completed
+- [x] Created DTOs for Devices module
+  - CreateDeviceDto, UpdateDeviceDto, QueryDevicesDto
+  - UpdateManufactoringStatusDto, UpdateOperationalStatusDto, AssignOwnerDto
+- [x] Implemented DevicesService with TDD (29 tests total):
+  - create() - with manufactoringCode duplicate validation
+  - findAll() - with pagination and filters (model, status, rental availability, owner)
+  - findOne() - with NotFoundException
+  - update() - with duplicate manufactoringCode validation
+  - remove() - sets operationalStatus to RETIRED
+  - updateManufactoringStatus() - update manufacturing status
+  - updateOperationalStatus() - update operational status
+  - assignOwner() - assign/remove device owner (validates client exists)
+  - findByReaderSerial() - find by reader1 or reader2 serial
+  - findByCpuSerial() - find by CPU serial
+  - findByBatterySerial() - find by battery serial
+- [x] Implemented DevicesController with all endpoints
+- [x] Updated API documentation (docs/API.md)
+- [x] Updated CHANGELOG.md
+
+### Decisions Made
+- **Spelling**: Using `manufactoring` (with 'o') as defined in schema
+- **Pagination**: Using `pageSize` instead of `limit` (consistent with Clients)
+- **Soft delete for devices**: Sets operationalStatus to RETIRED (not active flag)
+- **Reader search**: Single endpoint searches both reader1 and reader2
+
+### API Endpoints (Devices)
+| Method | Endpoint | Description | Access |
+|--------|----------|-------------|--------|
+| POST | /devices | Create device | Authenticated |
+| GET | /devices | List devices (with pagination and filters) | Authenticated |
+| GET | /devices/:id | Get device | Authenticated |
+| GET | /devices/reader/:serial | Find by reader serial | Authenticated |
+| GET | /devices/cpu/:serial | Find by CPU serial | Authenticated |
+| GET | /devices/battery/:serial | Find by battery serial | Authenticated |
+| PATCH | /devices/:id | Update device | Authenticated |
+| PATCH | /devices/:id/manufactoring-status | Update manufacturing status | Authenticated |
+| PATCH | /devices/:id/operational-status | Update operational status | Authenticated |
+| PATCH | /devices/:id/owner | Assign/remove owner | Authenticated |
+| DELETE | /devices/:id | Retire device | Authenticated |
+
+### Test Summary
+- Total tests: 68 (all passing)
+  - AuthService: 8 tests
+  - UsersService: 13 tests
+  - ClientsService: 15 tests
+  - DevicesService: 29 tests
+  - AppController: 3 tests
+
+### Pending / Next Session
+- [ ] Test Devices endpoints with Postman
+- [ ] Implement Product module
+- [ ] Implement Rental module
 
 ### Questions / Doubts
 - (none)

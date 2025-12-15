@@ -34,7 +34,7 @@ export class ClientsController {
   findAll(@Query() query: QueryClientsDto) {
     return this.clientsService.findAll({
       page: query.page,
-      limit: query.limit,
+      pageSize: query.pageSize,
       active: query.active,
     });
   }
