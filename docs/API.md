@@ -489,6 +489,297 @@ Soft delete client (sets `active: false`).
 
 ---
 
+### Devices
+
+All `/devices` endpoints require authentication.
+
+#### POST /devices
+
+Create a new device.
+
+**Access:** Authenticated
+
+**Request Body:**
+```json
+{
+  "model": "TS2",
+  "manufactoringCode": "TS2-20241215-001",
+  "manufactoringStatus": "PENDING",
+  "operationalStatus": "IN_MANUFACTURING",
+  "availableForRental": false,
+  "portCount": 4,
+  "notes": "Initial manufacturing batch"
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| model | enum | Yes | `TSONE`, `TS2`, `TS2_PLUS`, `CLB` |
+| manufactoringCode | string | Yes | Unique manufacturing identifier |
+| manufactoringStatus | enum | No | Default: `PENDING` |
+| operationalStatus | enum | No | Default: `IN_MANUFACTURING` |
+| availableForRental | boolean | No | Default: `false` |
+| ownerId | number | No | Client ID (owner) |
+| serialNumber | string | No | Assigned when sold |
+| portCount | number | No | Number of ports |
+| frequencyRegion | enum | No | `EU`, `FCC`, `GX1`, `GX2` |
+| manufacturingDate | datetime | No | Manufacturing date |
+| notes | string | No | Additional notes |
+| reader1SerialNumber | string | No | Reader 1 serial |
+| reader2SerialNumber | string | No | Reader 2 serial |
+| cpuSerialNumber | string | No | CPU serial |
+| batterySerialNumber | string | No | Battery serial |
+| tsPowerModel | string | No | Power model |
+| cpuFirmware | string | No | CPU firmware version |
+| gx1ReadersRegion | string | No | GX1 readers region |
+| hasGSM | boolean | No | Has GSM module |
+| hasGUN | boolean | No | Has GUN module |
+| bluetoothAdapter | string | No | Bluetooth adapter (CLB) |
+| coreVersion | string | No | Core version (CLB) |
+| heatsinks | string | No | Heatsinks info (CLB) |
+| picVersion | string | No | PIC version (CLB) |
+
+**Response (201):**
+```json
+{
+  "id": 1,
+  "model": "TS2",
+  "manufactoringCode": "TS2-20241215-001",
+  "manufactoringStatus": "PENDING",
+  "operationalStatus": "IN_MANUFACTURING",
+  "availableForRental": false,
+  "ownerId": null,
+  "serialNumber": null,
+  "portCount": 4,
+  "notes": "Initial manufacturing batch",
+  "createdAt": "2024-12-15T10:00:00.000Z",
+  "updatedAt": "2024-12-15T10:00:00.000Z"
+}
+```
+
+**Errors:**
+| Code | Error Key | Description |
+|------|-----------|-------------|
+| 400 | `MANUFACTORING_CODE_ALREADY_EXISTS` | Manufacturing code already exists |
+
+---
+
+#### GET /devices
+
+List devices with pagination and filters.
+
+**Access:** Authenticated
+
+**Query Parameters:**
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| page | number | `1` | Page number (min: 1) |
+| pageSize | number | `10` | Items per page (min: 1) |
+| model | enum | - | Filter by device model |
+| manufactoringStatus | enum | - | Filter by manufacturing status |
+| operationalStatus | enum | - | Filter by operational status |
+| availableForRental | boolean | - | Filter by rental availability |
+| ownerId | number | - | Filter by owner ID |
+
+**Enums:**
+- `model`: `TSONE`, `TS2`, `TS2_PLUS`, `CLB`
+- `manufactoringStatus`: `PENDING`, `IN_PROGRESS`, `PHASE1_COMPLETED`, `AWAITING_QA`, `COMPLETED`, `OUT_OF_STOCK`
+- `operationalStatus`: `IN_MANUFACTURING`, `AVAILABLE`, `RENTED`, `SOLD`, `IN_REPAIR`, `RETIRED`
+
+**Examples:**
+- `GET /devices` - First 10 devices
+- `GET /devices?model=TS2` - TS2 devices
+- `GET /devices?operationalStatus=AVAILABLE&availableForRental=true` - Available for rental
+
+**Response (200):**
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "model": "TS2",
+      "manufactoringCode": "TS2-20241215-001",
+      "manufactoringStatus": "COMPLETED",
+      "operationalStatus": "AVAILABLE",
+      "availableForRental": true,
+      "ownerId": null,
+      "createdAt": "2024-12-15T10:00:00.000Z",
+      "updatedAt": "2024-12-15T10:00:00.000Z"
+    }
+  ],
+  "meta": {
+    "total": 50,
+    "page": 1,
+    "pageSize": 10,
+    "totalPages": 5
+  }
+}
+```
+
+---
+
+#### GET /devices/:id
+
+Get a specific device by ID.
+
+**Access:** Authenticated
+
+**Response (200):** Full device object
+
+**Errors:**
+| Code | Error Key | Description |
+|------|-----------|-------------|
+| 404 | `DEVICE_NOT_FOUND` | Device does not exist |
+
+---
+
+#### GET /devices/reader/:serial
+
+Find device by reader serial number (searches reader1 and reader2).
+
+**Access:** Authenticated
+
+**Response (200):** Device object
+
+**Errors:**
+| Code | Error Key | Description |
+|------|-----------|-------------|
+| 404 | `DEVICE_NOT_FOUND` | No device with this reader serial |
+
+---
+
+#### GET /devices/cpu/:serial
+
+Find device by CPU serial number.
+
+**Access:** Authenticated
+
+**Response (200):** Device object
+
+**Errors:**
+| Code | Error Key | Description |
+|------|-----------|-------------|
+| 404 | `DEVICE_NOT_FOUND` | No device with this CPU serial |
+
+---
+
+#### GET /devices/battery/:serial
+
+Find device by battery serial number.
+
+**Access:** Authenticated
+
+**Response (200):** Device object
+
+**Errors:**
+| Code | Error Key | Description |
+|------|-----------|-------------|
+| 404 | `DEVICE_NOT_FOUND` | No device with this battery serial |
+
+---
+
+#### PATCH /devices/:id
+
+Update device data.
+
+**Access:** Authenticated
+
+**Request Body:** Any fields from CreateDeviceDto (all optional)
+
+**Response (200):** Updated device object
+
+**Errors:**
+| Code | Error Key | Description |
+|------|-----------|-------------|
+| 404 | `DEVICE_NOT_FOUND` | Device does not exist |
+| 400 | `MANUFACTORING_CODE_ALREADY_EXISTS` | New code already taken |
+
+---
+
+#### DELETE /devices/:id
+
+Retire device (sets `operationalStatus: RETIRED`).
+
+**Access:** Authenticated
+
+**Response (200):** Device with RETIRED status
+
+**Errors:**
+| Code | Error Key | Description |
+|------|-----------|-------------|
+| 404 | `DEVICE_NOT_FOUND` | Device does not exist |
+
+---
+
+#### PATCH /devices/:id/manufactoring-status
+
+Update device manufacturing status.
+
+**Access:** Authenticated
+
+**Request Body:**
+```json
+{
+  "status": "COMPLETED"
+}
+```
+
+**Response (200):** Updated device object
+
+**Errors:**
+| Code | Error Key | Description |
+|------|-----------|-------------|
+| 404 | `DEVICE_NOT_FOUND` | Device does not exist |
+
+---
+
+#### PATCH /devices/:id/operational-status
+
+Update device operational status.
+
+**Access:** Authenticated
+
+**Request Body:**
+```json
+{
+  "status": "AVAILABLE"
+}
+```
+
+**Response (200):** Updated device object
+
+**Errors:**
+| Code | Error Key | Description |
+|------|-----------|-------------|
+| 404 | `DEVICE_NOT_FOUND` | Device does not exist |
+
+---
+
+#### PATCH /devices/:id/owner
+
+Assign or remove device owner.
+
+**Access:** Authenticated
+
+**Request Body:**
+```json
+{
+  "ownerId": 5
+}
+```
+
+Send `null` or omit `ownerId` to remove owner.
+
+**Response (200):** Updated device object
+
+**Errors:**
+| Code | Error Key | Description |
+|------|-----------|-------------|
+| 404 | `DEVICE_NOT_FOUND` | Device does not exist |
+| 404 | `CLIENT_NOT_FOUND` | Client (owner) does not exist |
+
+---
+
 ## Error Response Format
 
 All errors follow this structure:

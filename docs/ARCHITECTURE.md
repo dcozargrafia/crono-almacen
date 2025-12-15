@@ -50,6 +50,12 @@ crono-almacen/
 │   │   ├── clients.module.ts
 │   │   ├── clients.service.ts
 │   │   └── clients.service.spec.ts
+│   ├── devices/            # Device management module
+│   │   ├── dto/            # CreateDeviceDto, UpdateDeviceDto, QueryDevicesDto, etc.
+│   │   ├── devices.controller.ts
+│   │   ├── devices.module.ts
+│   │   ├── devices.service.ts
+│   │   └── devices.service.spec.ts
 │   ├── types/              # Shared TypeScript types
 │   │   ├── index.ts        # Re-exports from Prisma + app types
 │   │   └── express.d.ts    # Express type augmentation
@@ -200,6 +206,8 @@ throw new ConflictException('EMAIL_ALREADY_EXISTS');
 | `INVALID_CURRENT_PASSWORD` | 401 | Wrong current password |
 | `CLIENT_NOT_FOUND` | 404 | Client doesn't exist |
 | `CODE_SPORTMANIACS_ALREADY_EXISTS` | 409 | Sportmaniacs code taken |
+| `DEVICE_NOT_FOUND` | 404 | Device doesn't exist |
+| `MANUFACTORING_CODE_ALREADY_EXISTS` | 400 | Manufacturing code taken |
 
 ---
 

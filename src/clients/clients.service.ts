@@ -33,9 +33,13 @@ export class ClientsService {
 
   // GET /clients - List clients with pagination and optional active filter
   async findAll(
-    options: { page?: number; limit?: number; active?: string } = {},
+    options: {
+      page?: number;
+      pageSize?: number;
+      active?: string;
+    } = {},
   ) {
-    const { page = 1, limit = 10, active = 'true' } = options;
+    const { page = 1, pageSize = 10, active = 'true' } = options;
 
     // Build where clause
     let where = {};
@@ -47,14 +51,14 @@ export class ClientsService {
     // active === 'all' → where stays {}
 
     // Calculate pagination
-    const skip = (page - 1) * limit;
+    const skip = (page - 1) * pageSize;
 
     // Execute queries in parallel
     const [data, total] = await Promise.all([
       this.prisma.client.findMany({
         where,
         skip,
-        take: limit,
+        take: pageSize,
       }),
       this.prisma.client.count({ where }),
     ]);
@@ -64,8 +68,8 @@ export class ClientsService {
       meta: {
         total,
         page,
-        limit,
-        totalPages: Math.ceil(total / limit),
+        pageSize,
+        totalPages: Math.ceil(total / pageSize),
       },
     };
   }

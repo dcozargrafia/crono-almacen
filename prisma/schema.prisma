@@ -21,7 +21,7 @@ enum DeviceModel {
   CLB
 }
 
-enum ManufacturingStatus {
+enum ManufactoringStatus {
   PENDING           // Not started
   IN_PROGRESS       // Being manufactured
   PHASE1_COMPLETED  // First phase done
@@ -83,10 +83,10 @@ model Device {
 
   // Identification (required)
   model             DeviceModel
-  manufacturingCode String      @unique  // Assigned at start of manufacturing
+  manufactoringCode String      @unique  // Assigned at start of manufacturing
 
   // Status (required with defaults)
-  manufacturingStatus ManufacturingStatus @default(PENDING)
+  manufactoringStatus ManufactoringStatus @default(PENDING)
   operationalStatus   OperationalStatus   @default(IN_MANUFACTURING)
   availableForRental  Boolean             @default(false)
 
@@ -128,7 +128,7 @@ model Device {
 
   // Indexes
   @@index([model])
-  @@index([manufacturingStatus])
+  @@index([manufactoringStatus])
   @@index([operationalStatus])
   @@index([availableForRental])
 
