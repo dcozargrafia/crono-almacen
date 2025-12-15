@@ -16,4 +16,5 @@ async function bootstrap() {
 
   await app.listen(process.env.PORT ?? 3000);
 }
-bootstrap();
+// void indicates we intentionally don't await this promise
+void bootstrap();

@@ -197,10 +197,7 @@ export class DevicesService {
   async findByReaderSerial(serial: string) {
     const device = await this.prisma.device.findFirst({
       where: {
-        OR: [
-          { reader1SerialNumber: serial },
-          { reader2SerialNumber: serial },
-        ],
+        OR: [{ reader1SerialNumber: serial }, { reader2SerialNumber: serial }],
       },
     });
 

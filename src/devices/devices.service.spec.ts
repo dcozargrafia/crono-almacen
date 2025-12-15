@@ -155,7 +155,7 @@ describe('DevicesService', () => {
       mockPrismaService.device.count.mockResolvedValue(1);
 
       // Act
-      const result = await service.findAll({ model: 'TSONE' as DeviceModel });
+      await service.findAll({ model: 'TSONE' as DeviceModel });
 
       // Assert
       expect(mockPrismaService.device.findMany).toHaveBeenCalledWith(

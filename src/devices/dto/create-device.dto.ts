@@ -9,7 +9,7 @@ import {
 } from 'class-validator';
 import {
   DeviceModel,
-  ManufacturingStatus,
+  ManufactoringStatus,
   OperationalStatus,
   FrequencyRegion,
 } from '@prisma/client';
@@ -24,9 +24,9 @@ export class CreateDeviceDto {
   manufactoringCode: string;
 
   // Optional status fields (have defaults in DB)
-  @IsEnum(ManufacturingStatus)
+  @IsEnum(ManufactoringStatus)
   @IsOptional()
-  manufactoringStatus?: ManufacturingStatus;
+  manufactoringStatus?: ManufactoringStatus;
 
   @IsEnum(OperationalStatus)
   @IsOptional()
