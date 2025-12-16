@@ -1243,7 +1243,11 @@ Create a new rental.
   "products": [
     { "productId": 1, "quantity": 5 }
   ],
-  "productUnitIds": [1, 2]
+  "productUnitIds": [1, 2],
+  "chipRanges": [
+    { "chipTypeId": 1, "rangeStart": 1, "rangeEnd": 100 },
+    { "chipTypeId": 1, "rangeStart": 501, "rangeEnd": 800 }
+  ]
 }
 ```
 
@@ -1256,6 +1260,7 @@ Create a new rental.
 | deviceIds | number[] | No | Array of device IDs to rent |
 | products | object[] | No | Array of products with quantity |
 | productUnitIds | number[] | No | Array of product unit IDs to rent |
+| chipRanges | object[] | No | Array of chip ranges to rent |
 
 **Response (201):**
 ```json
@@ -1271,6 +1276,7 @@ Create a new rental.
   "devices": [{ "deviceId": 1, "device": {...} }],
   "products": [{ "productId": 1, "quantity": 5, "product": {...} }],
   "productUnits": [{ "productUnitId": 1, "productUnit": {...} }],
+  "chipRanges": [{ "chipTypeId": 1, "rangeStart": 1, "rangeEnd": 100, "chipType": {...} }],
   "createdAt": "2024-01-15T10:00:00.000Z",
   "updatedAt": "2024-01-15T10:00:00.000Z"
 }
@@ -1283,10 +1289,12 @@ Create a new rental.
 | 404 | `DEVICE_NOT_FOUND` | Device does not exist |
 | 404 | `PRODUCT_NOT_FOUND` | Product does not exist |
 | 404 | `PRODUCT_UNIT_NOT_FOUND` | Product unit does not exist |
+| 404 | `CHIP_TYPE_NOT_FOUND` | Chip type does not exist |
 | 400 | `DEVICE_NOT_AVAILABLE_FOR_RENTAL` | Device not configured for rental |
 | 400 | `DEVICE_NOT_AVAILABLE` | Device already rented or not available |
 | 400 | `NOT_ENOUGH_PRODUCT_QUANTITY` | Not enough product quantity |
 | 400 | `PRODUCT_UNIT_NOT_AVAILABLE` | Product unit already rented |
+| 400 | `INVALID_CHIP_RANGE` | rangeStart is greater than rangeEnd |
 
 ---
 
@@ -1431,6 +1439,239 @@ Cancel rental and restore inventory.
 |------|-----------|-------------|
 | 404 | `RENTAL_NOT_FOUND` | Rental does not exist |
 | 400 | `RENTAL_NOT_ACTIVE` | Rental is not in ACTIVE status |
+
+---
+
+#### GET /rentals/:id/chip-sequence
+
+Get chip sequences for all chip ranges in a rental (for generating client files).
+
+**Access:** Authenticated
+
+**Response (200):**
+```json
+[
+  {
+    "chipType": "TRITON",
+    "chipTypeDisplayName": "Triton",
+    "rangeStart": 1,
+    "rangeEnd": 100,
+    "sequence": [
+      { "chip": 1, "code": "AA1234" },
+      { "chip": 2, "code": "AA1235" },
+      ...
+    ]
+  },
+  {
+    "chipType": "POD",
+    "chipTypeDisplayName": "Pod",
+    "rangeStart": 50,
+    "rangeEnd": 75,
+    "sequence": [...]
+  }
+]
+```
+
+**Errors:**
+| Code | Error Key | Description |
+|------|-----------|-------------|
+| 404 | `RENTAL_NOT_FOUND` | Rental does not exist |
+
+---
+
+### Chip Types
+
+All `/chip-types` endpoints require authentication. Chip types manage timing chips (Triton, Clipchip, Pod, Activo) and their sequences.
+
+#### POST /chip-types
+
+Create a new chip type.
+
+**Access:** Authenticated
+
+**Request Body:**
+```json
+{
+  "name": "TRITON",
+  "displayName": "Triton",
+  "totalStock": 5500
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| name | string | Yes | Unique identifier (uppercase) |
+| displayName | string | Yes | Display name |
+| totalStock | number | Yes | Total physical stock |
+
+**Response (201):**
+```json
+{
+  "id": 1,
+  "name": "TRITON",
+  "displayName": "Triton",
+  "totalStock": 5500,
+  "sequenceData": null,
+  "createdAt": "2024-12-16T10:00:00.000Z",
+  "updatedAt": "2024-12-16T10:00:00.000Z"
+}
+```
+
+**Errors:**
+| Code | Error Key | Description |
+|------|-----------|-------------|
+| 409 | `CHIP_TYPE_NAME_ALREADY_EXISTS` | Name already registered |
+
+---
+
+#### GET /chip-types
+
+List all chip types (without sequenceData for performance).
+
+**Access:** Authenticated
+
+**Response (200):**
+```json
+[
+  {
+    "id": 1,
+    "name": "TRITON",
+    "displayName": "Triton",
+    "totalStock": 5500,
+    "createdAt": "2024-12-16T10:00:00.000Z",
+    "updatedAt": "2024-12-16T10:00:00.000Z"
+  }
+]
+```
+
+---
+
+#### GET /chip-types/:id
+
+Get a specific chip type by ID (includes sequenceData).
+
+**Access:** Authenticated
+
+**Response (200):**
+```json
+{
+  "id": 1,
+  "name": "TRITON",
+  "displayName": "Triton",
+  "totalStock": 5500,
+  "sequenceData": [
+    { "chip": 1, "code": "AA1234" },
+    { "chip": 2, "code": "AA1235" }
+  ],
+  "createdAt": "2024-12-16T10:00:00.000Z",
+  "updatedAt": "2024-12-16T10:00:00.000Z"
+}
+```
+
+**Errors:**
+| Code | Error Key | Description |
+|------|-----------|-------------|
+| 404 | `CHIP_TYPE_NOT_FOUND` | Chip type does not exist |
+
+---
+
+#### PATCH /chip-types/:id
+
+Update chip type data.
+
+**Access:** Authenticated
+
+**Request Body:**
+```json
+{
+  "name": "TRITON_V2",
+  "displayName": "Triton V2",
+  "totalStock": 6000
+}
+```
+
+All fields are optional.
+
+**Response (200):** Updated chip type object
+
+**Errors:**
+| Code | Error Key | Description |
+|------|-----------|-------------|
+| 404 | `CHIP_TYPE_NOT_FOUND` | Chip type does not exist |
+| 409 | `CHIP_TYPE_NAME_ALREADY_EXISTS` | New name already taken |
+
+---
+
+#### DELETE /chip-types/:id
+
+Delete a chip type.
+
+**Access:** Authenticated
+
+**Response (200):** Deleted chip type object
+
+**Errors:**
+| Code | Error Key | Description |
+|------|-----------|-------------|
+| 404 | `CHIP_TYPE_NOT_FOUND` | Chip type does not exist |
+
+---
+
+#### PUT /chip-types/:id/sequence
+
+Upload sequence data for a chip type.
+
+**Access:** Authenticated
+
+**Request Body:**
+```json
+{
+  "sequence": [
+    { "chip": 1, "code": "AA1234" },
+    { "chip": 2, "code": "AA1235" },
+    { "chip": 3, "code": "AA1236" }
+  ]
+}
+```
+
+**Response (200):** Updated chip type with new sequenceData
+
+**Errors:**
+| Code | Error Key | Description |
+|------|-----------|-------------|
+| 404 | `CHIP_TYPE_NOT_FOUND` | Chip type does not exist |
+
+---
+
+#### GET /chip-types/:id/sequence
+
+Get sequence data for a chip type. Optionally filter by range.
+
+**Access:** Authenticated
+
+**Query Parameters:**
+| Param | Type | Description |
+|-------|------|-------------|
+| start | number | Filter: range start (optional) |
+| end | number | Filter: range end (optional) |
+
+**Examples:**
+- `GET /chip-types/1/sequence` - Full sequence
+- `GET /chip-types/1/sequence?start=100&end=200` - Chips 100-200 only
+
+**Response (200):**
+```json
+[
+  { "chip": 100, "code": "XY5678" },
+  { "chip": 101, "code": "XY5679" },
+  ...
+]
+```
+
+**Errors:**
+| Code | Error Key | Description |
+|------|-----------|-------------|
+| 404 | `CHIP_TYPE_NOT_FOUND` | Chip type does not exist |
 
 ---
 

@@ -361,6 +361,40 @@ Join table for product units (serial-based) in a rental.
 - Unique index on `(rentalId, productUnitId)` - Unit can only appear once per rental
 - Cascade delete when rental is deleted
 
+### ChipType
+
+Chip types for timing chips (Triton, Clipchip, Pod, Activo).
+
+| Field | Type | Constraints | Description |
+|-------|------|-------------|-------------|
+| id | Int | PK, auto-increment | Unique identifier |
+| name | String | Unique, required | Type identifier (TRITON, CLIPCHIP, etc.) |
+| displayName | String | Required | Display name |
+| totalStock | Int | Required | Physical stock (manually set) |
+| sequenceData | Json | Optional | Array of {chip, code} pairs |
+| createdAt | DateTime | Auto | Record creation time |
+| updatedAt | DateTime | Auto | Last update time |
+
+**Relations:**
+- `rentalChipRanges`: RentalChipRange[] - Chip ranges using this type
+
+### RentalChipRange
+
+Join table for chip ranges in a rental.
+
+| Field | Type | Constraints | Description |
+|-------|------|-------------|-------------|
+| id | Int | PK, auto-increment | Unique identifier |
+| rentalId | Int | FK, required | Parent rental |
+| chipTypeId | Int | FK, required | Chip type |
+| rangeStart | Int | Required | First chip number in range |
+| rangeEnd | Int | Required | Last chip number in range |
+
+**Constraints:**
+- Cascade delete when rental is deleted
+- Index on `rentalId`
+- Index on `chipTypeId`
+
 ---
 
 ## Design Decisions
@@ -441,6 +475,7 @@ pnpm db:studio
 | `20251212200124_add_client_and_device` | Add Client and Device models |
 | `20251216171645_add_products_and_product_units` | Add Product and ProductUnit models |
 | `20251216183543_add_rentals` | Add Rental and join tables |
+| `20251216225928_add_chip_types` | Add ChipType and RentalChipRange models |
 
 ---
 

@@ -233,6 +233,7 @@ model Rental {
   devices      RentalDevice[]
   products     RentalProduct[]
   productUnits RentalProductUnit[]
+  chipRanges   RentalChipRange[]
 
   @@index([clientId])
   @@index([status])
@@ -276,4 +277,35 @@ model RentalProductUnit {
 
   @@unique([rentalId, productUnitId])
   @@map("rental_product_units")
+}
+
+// Chip types for timing chips (Triton, Clipchip, Pod, Activo)
+model ChipType {
+  id           Int      @id @default(autoincrement())
+  name         String   @unique // TRITON, CLIPCHIP, POD, ACTIVO
+  displayName  String   // Triton, Clipchip, Pod, Activo
+  totalStock   Int      // Physical stock (manual)
+  sequenceData Json?    // [{chip: 1, code: "AA6543"}, ...]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  rentalChipRanges RentalChipRange[]
+
+  @@map("chip_types")
+}
+
+// Chip ranges in a rental
+model RentalChipRange {
+  id         Int      @id @default(autoincrement())
+  rentalId   Int
+  rental     Rental   @relation(fields: [rentalId], references: [id], onDelete: Cascade)
+  chipTypeId Int
+  chipType   ChipType @relation(fields: [chipTypeId], references: [id])
+  rangeStart Int
+  rangeEnd   Int
+
+  @@index([rentalId])
+  @@index([chipTypeId])
+  @@map("rental_chip_ranges")
 }

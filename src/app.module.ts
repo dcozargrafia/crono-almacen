@@ -9,6 +9,7 @@ import { DevicesModule } from './devices/devices.module';
 import { ProductsModule } from './products/products.module';
 import { ProductUnitsModule } from './product-units/product-units.module';
 import { RentalsModule } from './rentals/rentals.module';
+import { ChipTypesModule } from './chip-types/chip-types.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { RentalsModule } from './rentals/rentals.module';
     ProductsModule,
     ProductUnitsModule,
     RentalsModule,
+    ChipTypesModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

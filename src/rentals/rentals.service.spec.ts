@@ -84,6 +84,17 @@ describe('RentalsService', () => {
     ...overrides,
   });
 
+  const createMockChipType = (overrides = {}) => ({
+    id: 1,
+    name: 'TRITON',
+    displayName: 'Triton',
+    totalStock: 5500,
+    sequenceData: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    ...overrides,
+  });
+
   beforeEach(async () => {
     mockPrismaService = {
       rental: {
@@ -110,6 +121,9 @@ describe('RentalsService', () => {
         findMany: jest.fn(),
         update: jest.fn(),
         updateMany: jest.fn(),
+      },
+      chipType: {
+        findMany: jest.fn(),
       },
       $transaction: jest.fn((callback) => callback(mockPrismaService)),
     };
@@ -350,6 +364,77 @@ describe('RentalsService', () => {
       await expect(service.create(dto)).rejects.toThrow(
         'PRODUCT_UNIT_NOT_AVAILABLE',
       );
+    });
+
+    it('should create a rental with chip ranges', async () => {
+      // Arrange
+      const dto = {
+        clientId: 1,
+        startDate: '2024-01-15',
+        expectedEndDate: '2024-01-20',
+        chipRanges: [
+          { chipTypeId: 1, rangeStart: 1, rangeEnd: 100 },
+          { chipTypeId: 1, rangeStart: 501, rangeEnd: 800 },
+        ],
+      };
+      const mockClient = createMockClient();
+      const mockChipTypes = [createMockChipType({ id: 1 })];
+      const mockRental = createMockRental({
+        chipRanges: [
+          { chipTypeId: 1, rangeStart: 1, rangeEnd: 100 },
+          { chipTypeId: 1, rangeStart: 501, rangeEnd: 800 },
+        ],
+      });
+
+      mockPrismaService.client.findUnique.mockResolvedValue(mockClient);
+      mockPrismaService.chipType.findMany.mockResolvedValue(mockChipTypes);
+      mockPrismaService.rental.create.mockResolvedValue(mockRental);
+
+      // Act
+      const result = await service.create(dto);
+
+      // Assert
+      expect(result.chipRanges).toHaveLength(2);
+      expect(mockPrismaService.chipType.findMany).toHaveBeenCalledWith({
+        where: { id: { in: [1] } },
+      });
+    });
+
+    it('should throw NotFoundException if chip type does not exist', async () => {
+      // Arrange
+      const dto = {
+        clientId: 1,
+        startDate: '2024-01-15',
+        expectedEndDate: '2024-01-20',
+        chipRanges: [{ chipTypeId: 999, rangeStart: 1, rangeEnd: 100 }],
+      };
+      const mockClient = createMockClient();
+
+      mockPrismaService.client.findUnique.mockResolvedValue(mockClient);
+      mockPrismaService.chipType.findMany.mockResolvedValue([]);
+
+      // Act & Assert
+      await expect(service.create(dto)).rejects.toThrow(NotFoundException);
+      await expect(service.create(dto)).rejects.toThrow('CHIP_TYPE_NOT_FOUND');
+    });
+
+    it('should throw BadRequestException if rangeStart is greater than rangeEnd', async () => {
+      // Arrange
+      const dto = {
+        clientId: 1,
+        startDate: '2024-01-15',
+        expectedEndDate: '2024-01-20',
+        chipRanges: [{ chipTypeId: 1, rangeStart: 100, rangeEnd: 1 }],
+      };
+      const mockClient = createMockClient();
+      const mockChipTypes = [createMockChipType({ id: 1 })];
+
+      mockPrismaService.client.findUnique.mockResolvedValue(mockClient);
+      mockPrismaService.chipType.findMany.mockResolvedValue(mockChipTypes);
+
+      // Act & Assert
+      await expect(service.create(dto)).rejects.toThrow(BadRequestException);
+      await expect(service.create(dto)).rejects.toThrow('INVALID_CHIP_RANGE');
     });
   });
 
@@ -593,6 +678,90 @@ describe('RentalsService', () => {
       await expect(service.cancelRental(1)).rejects.toThrow(
         'RENTAL_NOT_ACTIVE',
       );
+    });
+  });
+
+  describe('getChipSequenceForRental', () => {
+    it('should return chip sequences for all ranges in a rental', async () => {
+      // Arrange
+      const mockRental = createMockRental({
+        chipRanges: [
+          {
+            id: 1,
+            chipTypeId: 1,
+            rangeStart: 1,
+            rangeEnd: 3,
+            chipType: createMockChipType({
+              id: 1,
+              name: 'TRITON',
+              sequenceData: [
+                { chip: 1, code: 'A1' },
+                { chip: 2, code: 'A2' },
+                { chip: 3, code: 'A3' },
+                { chip: 4, code: 'A4' },
+                { chip: 5, code: 'A5' },
+              ],
+            }),
+          },
+          {
+            id: 2,
+            chipTypeId: 2,
+            rangeStart: 10,
+            rangeEnd: 12,
+            chipType: createMockChipType({
+              id: 2,
+              name: 'POD',
+              sequenceData: [
+                { chip: 10, code: 'P10' },
+                { chip: 11, code: 'P11' },
+                { chip: 12, code: 'P12' },
+              ],
+            }),
+          },
+        ],
+      });
+      mockPrismaService.rental.findUnique.mockResolvedValue(mockRental);
+
+      // Act
+      const result = await service.getChipSequenceForRental(1);
+
+      // Assert
+      expect(result).toHaveLength(2);
+      expect(result[0].chipType).toBe('TRITON');
+      expect(result[0].rangeStart).toBe(1);
+      expect(result[0].rangeEnd).toBe(3);
+      expect(result[0].sequence).toEqual([
+        { chip: 1, code: 'A1' },
+        { chip: 2, code: 'A2' },
+        { chip: 3, code: 'A3' },
+      ]);
+      expect(result[1].chipType).toBe('POD');
+      expect(result[1].sequence).toHaveLength(3);
+    });
+
+    it('should throw NotFoundException if rental does not exist', async () => {
+      // Arrange
+      mockPrismaService.rental.findUnique.mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(service.getChipSequenceForRental(999)).rejects.toThrow(
+        NotFoundException,
+      );
+      await expect(service.getChipSequenceForRental(999)).rejects.toThrow(
+        'RENTAL_NOT_FOUND',
+      );
+    });
+
+    it('should return empty array if rental has no chip ranges', async () => {
+      // Arrange
+      const mockRental = createMockRental({ chipRanges: [] });
+      mockPrismaService.rental.findUnique.mockResolvedValue(mockRental);
+
+      // Act
+      const result = await service.getChipSequenceForRental(1);
+
+      // Assert
+      expect(result).toEqual([]);
     });
   });
 });

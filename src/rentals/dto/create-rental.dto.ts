@@ -8,6 +8,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { RentalProductDto } from './rental-product.dto';
+import { ChipRangeDto } from './chip-range.dto';
 
 export class CreateRentalDto {
   @IsInt()
@@ -38,4 +39,10 @@ export class CreateRentalDto {
   @IsInt({ each: true })
   @IsOptional()
   productUnitIds?: number[];
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ChipRangeDto)
+  @IsOptional()
+  chipRanges?: ChipRangeDto[];
 }

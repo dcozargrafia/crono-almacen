@@ -382,6 +382,81 @@ Feature especial para gestión de chips de cronometraje:
 
 ---
 
+## Session 7 - 2024-12-16
+
+### Objective
+Implement ChipTypes module for timing chips management.
+
+### Completed
+- [x] Designed ChipType model with sequenceData (JSON field for chip-code pairs)
+- [x] Designed RentalChipRange join table for chip ranges in rentals
+- [x] Updated Prisma schema with ChipType and RentalChipRange models
+- [x] Generated migration `20251216225928_add_chip_types`
+- [x] Generated NestJS ChipTypes module
+- [x] Implemented ChipTypesService with TDD (18 tests):
+  - create() - with name duplicate validation
+  - findAll() - returns list without sequenceData (performance)
+  - findOne() - returns full entity with sequenceData
+  - update() - with name duplicate validation
+  - remove() - hard delete
+  - uploadSequence() - upload sequence data
+  - getSequence() - get full sequence
+  - getSequenceRange() - get filtered sequence by range
+- [x] Implemented ChipTypesController (15 tests)
+- [x] Added chip ranges support to RentalsService:
+  - chipRanges in CreateRentalDto
+  - Validation: chip type exists, rangeStart <= rangeEnd
+  - chipRanges included in rental responses
+- [x] Added getChipSequenceForRental() for generating client files
+- [x] Added GET /rentals/:id/chip-sequence endpoint
+- [x] Updated documentation (API.md, DATABASE.md, CHANGELOG.md)
+
+### Decisions Made
+- **totalStock manual**: User sets totalStock manually (not auto-calculated from sequenceData)
+- **sequenceData JSON**: Array of {chip, code} pairs stored as JSON
+- **No availability validation**: Just record what was rented, don't check for overlaps
+- **Multiple ranges per rental**: A rental can have multiple chip ranges (even for same chip type)
+- **Hard delete for ChipType**: Unlike other entities, chip types use hard delete
+
+### API Endpoints (Chip Types)
+| Method | Endpoint | Description | Access |
+|--------|----------|-------------|--------|
+| POST | /chip-types | Create chip type | Authenticated |
+| GET | /chip-types | List chip types (without sequenceData) | Authenticated |
+| GET | /chip-types/:id | Get chip type (with sequenceData) | Authenticated |
+| PATCH | /chip-types/:id | Update chip type | Authenticated |
+| DELETE | /chip-types/:id | Delete chip type | Authenticated |
+| PUT | /chip-types/:id/sequence | Upload sequence data | Authenticated |
+| GET | /chip-types/:id/sequence | Get sequence (optionally filtered) | Authenticated |
+
+### API Endpoints (Rentals - Updated)
+| Method | Endpoint | Description | Access |
+|--------|----------|-------------|--------|
+| GET | /rentals/:id/chip-sequence | Get chip sequences for rental | Authenticated |
+
+### Test Summary
+- Total tests: 191 (all passing)
+  - AuthService: 8 tests
+  - UsersService: 13 tests
+  - ClientsService: 15 tests
+  - DevicesService: 29 tests
+  - ProductsService: 40 tests
+  - ProductUnitsService: 20 tests
+  - RentalsService: 30 tests (+6 for chip ranges)
+  - ChipTypesService: 18 tests
+  - ChipTypesController: 15 tests
+  - AppController: 3 tests
+
+### Pending / Next Session
+- [ ] Test ChipTypes and chip ranges with Postman
+- [ ] Add CSV/file export for chip sequences
+- [ ] Seed data for chip types (Triton, Clipchip, Pod, Activo)
+
+### Questions / Doubts
+- (none)
+
+---
+
 <!-- Template for new sessions:
 
 ## Session N - YYYY-MM-DD

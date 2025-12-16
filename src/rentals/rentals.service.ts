@@ -116,6 +116,28 @@ export class RentalsService {
         });
       }
 
+      // Validate chip types exist
+      if (createRentalDto.chipRanges?.length) {
+        const chipTypeIds = [
+          ...new Set(createRentalDto.chipRanges.map((cr) => cr.chipTypeId)),
+        ];
+
+        const chipTypes = await tx.chipType.findMany({
+          where: { id: { in: chipTypeIds } },
+        });
+
+        if (chipTypes.length !== chipTypeIds.length) {
+          throw new NotFoundException('CHIP_TYPE_NOT_FOUND');
+        }
+
+        // Validate rangeStart <= rangeEnd for each range
+        for (const range of createRentalDto.chipRanges) {
+          if (range.rangeStart > range.rangeEnd) {
+            throw new BadRequestException('INVALID_CHIP_RANGE');
+          }
+        }
+      }
+
       // Create the rental with all relations
       const rental = await tx.rental.create({
         data: {
@@ -145,12 +167,22 @@ export class RentalsService {
                 })),
               }
             : undefined,
+          chipRanges: createRentalDto.chipRanges?.length
+            ? {
+                create: createRentalDto.chipRanges.map((cr) => ({
+                  chipTypeId: cr.chipTypeId,
+                  rangeStart: cr.rangeStart,
+                  rangeEnd: cr.rangeEnd,
+                })),
+              }
+            : undefined,
         },
         include: {
           client: true,
           devices: true,
           products: true,
           productUnits: true,
+          chipRanges: { include: { chipType: true } },
         },
       });
 
@@ -185,6 +217,7 @@ export class RentalsService {
           devices: { include: { device: true } },
           products: { include: { product: true } },
           productUnits: { include: { productUnit: true } },
+          chipRanges: { include: { chipType: true } },
         },
         orderBy: { createdAt: 'desc' },
       }),
@@ -211,6 +244,7 @@ export class RentalsService {
         devices: { include: { device: true } },
         products: { include: { product: true } },
         productUnits: { include: { productUnit: true } },
+        chipRanges: { include: { chipType: true } },
       },
     });
 
@@ -307,6 +341,7 @@ export class RentalsService {
           devices: { include: { device: true } },
           products: { include: { product: true } },
           productUnits: { include: { productUnit: true } },
+          chipRanges: { include: { chipType: true } },
         },
       });
     });
@@ -369,8 +404,44 @@ export class RentalsService {
           devices: { include: { device: true } },
           products: { include: { product: true } },
           productUnits: { include: { productUnit: true } },
+          chipRanges: { include: { chipType: true } },
         },
       });
+    });
+  }
+
+  // GET /rentals/:id/chip-sequence - Get chip sequence data for rental
+  async getChipSequenceForRental(id: number) {
+    const rental = await this.prisma.rental.findUnique({
+      where: { id },
+      include: {
+        chipRanges: { include: { chipType: true } },
+      },
+    });
+
+    if (!rental) {
+      throw new NotFoundException('RENTAL_NOT_FOUND');
+    }
+
+    if (!rental.chipRanges?.length) {
+      return [];
+    }
+
+    return rental.chipRanges.map((range) => {
+      const sequenceData =
+        (range.chipType.sequenceData as { chip: number; code: string }[]) || [];
+
+      const filteredSequence = sequenceData.filter(
+        (item) => item.chip >= range.rangeStart && item.chip <= range.rangeEnd,
+      );
+
+      return {
+        chipType: range.chipType.name,
+        chipTypeDisplayName: range.chipType.displayName,
+        rangeStart: range.rangeStart,
+        rangeEnd: range.rangeEnd,
+        sequence: filteredSequence,
+      };
     });
   }
 }

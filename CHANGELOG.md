@@ -10,6 +10,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Chip types management module (timing chips: Triton, Clipchip, Pod, Activo)
+  - `POST /chip-types` - Create chip type
+  - `GET /chip-types` - List chip types (without sequenceData)
+  - `GET /chip-types/:id` - Get chip type (with sequenceData)
+  - `PATCH /chip-types/:id` - Update chip type
+  - `DELETE /chip-types/:id` - Delete chip type
+  - `PUT /chip-types/:id/sequence` - Upload sequence data
+  - `GET /chip-types/:id/sequence` - Get sequence (optionally filtered by range)
+- Chip ranges support in rentals
+  - Rentals can now include chip ranges (e.g., Triton 1-100, 501-800)
+  - `GET /rentals/:id/chip-sequence` - Get chip sequences for rental file generation
+- Unit tests for ChipTypesService (18 tests with TDD)
+- Unit tests for ChipTypesController (15 tests)
 - Product management module (quantity-based rental equipment)
   - `POST /products` - Create product
   - `GET /products` - List products (with pagination and filters)

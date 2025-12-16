@@ -68,4 +68,10 @@ export class RentalsController {
   cancelRental(@Param('id', ParseIntPipe) id: number) {
     return this.rentalsService.cancelRental(id);
   }
+
+  // GET /rentals/:id/chip-sequence - Get chip sequences for rental
+  @Get(':id/chip-sequence')
+  getChipSequence(@Param('id', ParseIntPipe) id: number) {
+    return this.rentalsService.getChipSequenceForRental(id);
+  }
 }
