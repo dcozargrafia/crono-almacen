@@ -8,6 +8,7 @@ import { ClientsModule } from './clients/clients.module';
 import { DevicesModule } from './devices/devices.module';
 import { ProductsModule } from './products/products.module';
 import { ProductUnitsModule } from './product-units/product-units.module';
+import { RentalsModule } from './rentals/rentals.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { ProductUnitsModule } from './product-units/product-units.module';
     DevicesModule,
     ProductsModule,
     ProductUnitsModule,
+    RentalsModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

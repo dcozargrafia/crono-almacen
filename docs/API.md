@@ -1222,6 +1222,218 @@ Reactivate a soft-deleted product unit.
 
 ---
 
+### Rentals
+
+All `/rentals` endpoints require authentication. Rentals track equipment loaned to clients.
+
+#### POST /rentals
+
+Create a new rental.
+
+**Access:** Authenticated
+
+**Request Body:**
+```json
+{
+  "clientId": 1,
+  "startDate": "2024-01-15",
+  "expectedEndDate": "2024-01-20",
+  "notes": "Event rental",
+  "deviceIds": [1, 2],
+  "products": [
+    { "productId": 1, "quantity": 5 }
+  ],
+  "productUnitIds": [1, 2]
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| clientId | number | Yes | Client receiving the rental |
+| startDate | string | Yes | Rental start date (ISO format) |
+| expectedEndDate | string | Yes | Expected return date (ISO format) |
+| notes | string | No | Additional notes |
+| deviceIds | number[] | No | Array of device IDs to rent |
+| products | object[] | No | Array of products with quantity |
+| productUnitIds | number[] | No | Array of product unit IDs to rent |
+
+**Response (201):**
+```json
+{
+  "id": 1,
+  "clientId": 1,
+  "startDate": "2024-01-15T00:00:00.000Z",
+  "expectedEndDate": "2024-01-20T00:00:00.000Z",
+  "actualEndDate": null,
+  "status": "ACTIVE",
+  "notes": "Event rental",
+  "client": { "id": 1, "name": "Acme Sports" },
+  "devices": [{ "deviceId": 1, "device": {...} }],
+  "products": [{ "productId": 1, "quantity": 5, "product": {...} }],
+  "productUnits": [{ "productUnitId": 1, "productUnit": {...} }],
+  "createdAt": "2024-01-15T10:00:00.000Z",
+  "updatedAt": "2024-01-15T10:00:00.000Z"
+}
+```
+
+**Errors:**
+| Code | Error Key | Description |
+|------|-----------|-------------|
+| 404 | `CLIENT_NOT_FOUND` | Client does not exist |
+| 404 | `DEVICE_NOT_FOUND` | Device does not exist |
+| 404 | `PRODUCT_NOT_FOUND` | Product does not exist |
+| 404 | `PRODUCT_UNIT_NOT_FOUND` | Product unit does not exist |
+| 400 | `DEVICE_NOT_AVAILABLE_FOR_RENTAL` | Device not configured for rental |
+| 400 | `DEVICE_NOT_AVAILABLE` | Device already rented or not available |
+| 400 | `NOT_ENOUGH_PRODUCT_QUANTITY` | Not enough product quantity |
+| 400 | `PRODUCT_UNIT_NOT_AVAILABLE` | Product unit already rented |
+
+---
+
+#### GET /rentals
+
+List rentals with pagination and filters.
+
+**Access:** Authenticated
+
+**Query Parameters:**
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| page | number | `1` | Page number (min: 1) |
+| pageSize | number | `10` | Items per page (min: 1) |
+| status | enum | - | Filter by status |
+| clientId | number | - | Filter by client ID |
+
+**Status values:** `ACTIVE`, `RETURNED`, `CANCELLED`
+
+**Examples:**
+- `GET /rentals` - First 10 rentals
+- `GET /rentals?status=ACTIVE` - Active rentals
+- `GET /rentals?clientId=1` - Rentals for client 1
+
+**Response (200):**
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "clientId": 1,
+      "startDate": "2024-01-15T00:00:00.000Z",
+      "expectedEndDate": "2024-01-20T00:00:00.000Z",
+      "status": "ACTIVE",
+      "client": { "id": 1, "name": "Acme Sports" },
+      "devices": [...],
+      "products": [...],
+      "productUnits": [...]
+    }
+  ],
+  "meta": {
+    "total": 25,
+    "page": 1,
+    "pageSize": 10,
+    "totalPages": 3
+  }
+}
+```
+
+---
+
+#### GET /rentals/:id
+
+Get a specific rental by ID.
+
+**Access:** Authenticated
+
+**Response (200):** Full rental object with all relations
+
+**Errors:**
+| Code | Error Key | Description |
+|------|-----------|-------------|
+| 404 | `RENTAL_NOT_FOUND` | Rental does not exist |
+
+---
+
+#### PATCH /rentals/:id
+
+Update rental basic fields.
+
+**Access:** Authenticated
+
+**Request Body:**
+```json
+{
+  "startDate": "2024-01-16",
+  "expectedEndDate": "2024-01-25",
+  "notes": "Updated notes"
+}
+```
+
+All fields are optional. Can only update ACTIVE rentals.
+
+**Response (200):** Updated rental object
+
+**Errors:**
+| Code | Error Key | Description |
+|------|-----------|-------------|
+| 404 | `RENTAL_NOT_FOUND` | Rental does not exist |
+| 400 | `RENTAL_NOT_ACTIVE` | Rental is not in ACTIVE status |
+
+---
+
+#### POST /rentals/:id/return
+
+Mark rental as returned and restore inventory.
+
+**Access:** Authenticated
+
+**Response (200):**
+```json
+{
+  "id": 1,
+  "status": "RETURNED",
+  "actualEndDate": "2024-01-19T15:00:00.000Z",
+  ...
+}
+```
+
+**Side Effects:**
+- Devices: `operationalStatus` set to `AVAILABLE`
+- Products: `rentedQuantity` decreased, `availableQuantity` increased
+- ProductUnits: `status` set to `AVAILABLE`
+
+**Errors:**
+| Code | Error Key | Description |
+|------|-----------|-------------|
+| 404 | `RENTAL_NOT_FOUND` | Rental does not exist |
+| 400 | `RENTAL_NOT_ACTIVE` | Rental is not in ACTIVE status |
+
+---
+
+#### POST /rentals/:id/cancel
+
+Cancel rental and restore inventory.
+
+**Access:** Authenticated
+
+**Response (200):**
+```json
+{
+  "id": 1,
+  "status": "CANCELLED",
+  ...
+}
+```
+
+**Side Effects:** Same as return (inventory restored)
+
+**Errors:**
+| Code | Error Key | Description |
+|------|-----------|-------------|
+| 404 | `RENTAL_NOT_FOUND` | Rental does not exist |
+| 400 | `RENTAL_NOT_ACTIVE` | Rental is not in ACTIVE status |
+
+---
+
 ## Error Response Format
 
 All errors follow this structure:

@@ -55,13 +55,33 @@ ORM: **Prisma 6.x**
 │ availableQuantity   │       │ createdAt           │
 │ rentedQuantity      │       │ updatedAt           │
 │ inRepairQuantity    │       └─────────────────────┘
-│ active              │
-│ createdAt           │
-│ updatedAt           │
-└─────────────────────┘
-
-Future entities (not yet implemented):
-- Rental: Track equipment loans
+│ active              │                ▲
+│ createdAt           │                │ 1:N
+│ updatedAt           │                │
+└─────────────────────┘       ┌────────┴────────────┐
+        ▲                     │  RentalProductUnit  │
+        │ 1:N                 ├─────────────────────┤
+        │                     │ id (PK)             │
+┌───────┴─────────────┐       │ rentalId (FK)       │
+│    RentalProduct    │       │ productUnitId (FK)  │
+├─────────────────────┤       └─────────────────────┘
+│ id (PK)             │                ▲
+│ rentalId (FK)       │                │
+│ productId (FK)      │      ┌─────────┴───────────┐
+│ quantity            │      │       Rental        │
+└─────────────────────┘      ├─────────────────────┤
+                             │ id (PK)             │
+┌─────────────────────┐      │ clientId (FK)       │───> Client
+│    RentalDevice     │      │ startDate           │
+├─────────────────────┤      │ expectedEndDate     │
+│ id (PK)             │      │ actualEndDate       │
+│ rentalId (FK)       │<─────│ status              │
+│ deviceId (FK)       │      │ notes               │
+└─────────────────────┘      │ createdAt           │
+        │                    │ updatedAt           │
+        │ N:1                └─────────────────────┘
+        ▼
+     Device
 ```
 
 ---
@@ -141,6 +161,15 @@ Status for serialized product units.
 | RENTED | Currently rented |
 | IN_REPAIR | Under maintenance |
 | RETIRED | No longer in use |
+
+### RentalStatus
+Rental transaction status.
+
+| Value | Description |
+|-------|-------------|
+| ACTIVE | Rental in progress |
+| RETURNED | All items returned |
+| CANCELLED | Rental cancelled |
 
 ---
 
@@ -262,6 +291,76 @@ Serialized rental equipment (tracked individually by serial number).
 | createdAt | DateTime | Auto | Record creation time |
 | updatedAt | DateTime | Auto | Last update time |
 
+### Rental
+
+Equipment rental transaction.
+
+| Field | Type | Constraints | Description |
+|-------|------|-------------|-------------|
+| id | Int | PK, auto-increment | Unique identifier |
+| clientId | Int | FK, required | Client receiving the rental |
+| startDate | DateTime | Required | Rental start date |
+| expectedEndDate | DateTime | Required | Expected return date |
+| actualEndDate | DateTime | Optional | Actual return date |
+| status | RentalStatus | Default: ACTIVE | Rental status |
+| notes | String | Optional | Additional notes |
+| createdAt | DateTime | Auto | Record creation time |
+| updatedAt | DateTime | Auto | Last update time |
+
+**Relations:**
+- `client`: Client who receives the rental
+- `devices`: RentalDevice[] - Devices in this rental
+- `products`: RentalProduct[] - Products (by quantity) in this rental
+- `productUnits`: RentalProductUnit[] - Product units (by serial) in this rental
+
+**Indexes:**
+- `clientId` - Filter by client
+- `status` - Filter by rental status
+- `startDate` - Filter/sort by date
+
+### RentalDevice
+
+Join table for devices in a rental.
+
+| Field | Type | Constraints | Description |
+|-------|------|-------------|-------------|
+| id | Int | PK, auto-increment | Unique identifier |
+| rentalId | Int | FK, required | Parent rental |
+| deviceId | Int | FK, required | Device being rented |
+
+**Constraints:**
+- Unique index on `(rentalId, deviceId)` - Device can only appear once per rental
+- Cascade delete when rental is deleted
+
+### RentalProduct
+
+Join table for products (quantity-based) in a rental.
+
+| Field | Type | Constraints | Description |
+|-------|------|-------------|-------------|
+| id | Int | PK, auto-increment | Unique identifier |
+| rentalId | Int | FK, required | Parent rental |
+| productId | Int | FK, required | Product being rented |
+| quantity | Int | Required | Quantity rented |
+
+**Constraints:**
+- Unique index on `(rentalId, productId)` - Product can only appear once per rental
+- Cascade delete when rental is deleted
+
+### RentalProductUnit
+
+Join table for product units (serial-based) in a rental.
+
+| Field | Type | Constraints | Description |
+|-------|------|-------------|-------------|
+| id | Int | PK, auto-increment | Unique identifier |
+| rentalId | Int | FK, required | Parent rental |
+| productUnitId | Int | FK, required | Product unit being rented |
+
+**Constraints:**
+- Unique index on `(rentalId, productUnitId)` - Unit can only appear once per rental
+- Cascade delete when rental is deleted
+
 ---
 
 ## Design Decisions
@@ -341,6 +440,7 @@ pnpm db:studio
 | `20251211191813_rename_usuario_to_user` | Initial schema with User model |
 | `20251212200124_add_client_and_device` | Add Client and Device models |
 | `20251216171645_add_products_and_product_units` | Add Product and ProductUnit models |
+| `20251216183543_add_rentals` | Add Rental and join tables |
 
 ---
 
@@ -367,11 +467,12 @@ pnpm db:seed
 
 ---
 
-## Future Schema (Planned)
+## Future Enhancements
 
-### Rental
-Equipment loans tracking.
-- What equipment (devices, products, product units)
-- To whom (client)
-- When (start/end dates)
-- Status tracking
+### Rentals Module
+
+| Feature | Description | Impact |
+|---------|-------------|--------|
+| Pending rentals endpoint | `GET /rentals/pending` - Rentals past expectedEndDate but still ACTIVE | New endpoint, useful for frontend alerts |
+| Partial returns | Return only some items from a rental | May require RentalItemStatus or split rental logic |
+| Rental extension | Extend expectedEndDate on active rentals | Simple PATCH, could add extension history |
