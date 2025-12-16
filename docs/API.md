@@ -780,6 +780,448 @@ Send `null` or omit `ownerId` to remove owner.
 
 ---
 
+### Products
+
+All `/products` endpoints require authentication.
+
+#### POST /products
+
+Create a new product (quantity-based equipment).
+
+**Access:** Authenticated
+
+**Request Body:**
+```json
+{
+  "name": "USB Cable 3m",
+  "type": "CABLE",
+  "description": "USB-C to USB-A cable, 3 meters",
+  "notes": "For TS2 devices",
+  "totalQuantity": 50
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| name | string | Yes | Product name |
+| type | enum | Yes | `ANTENNA`, `STOPWATCH`, `PHONE`, `MIFI`, `CABLE`, `OTHER` |
+| description | string | No | Product description |
+| notes | string | No | Additional notes |
+| totalQuantity | number | No | Initial quantity (default: 0) |
+
+**Response (201):**
+```json
+{
+  "id": 1,
+  "name": "USB Cable 3m",
+  "type": "CABLE",
+  "description": "USB-C to USB-A cable, 3 meters",
+  "notes": "For TS2 devices",
+  "totalQuantity": 50,
+  "availableQuantity": 50,
+  "rentedQuantity": 0,
+  "inRepairQuantity": 0,
+  "active": true,
+  "createdAt": "2024-12-16T10:00:00.000Z",
+  "updatedAt": "2024-12-16T10:00:00.000Z"
+}
+```
+
+---
+
+#### GET /products
+
+List products with pagination and filters.
+
+**Access:** Authenticated
+
+**Query Parameters:**
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| page | number | `1` | Page number (min: 1) |
+| pageSize | number | `10` | Items per page (min: 1) |
+| type | enum | - | Filter by product type |
+| active | boolean | - | Filter by active status |
+
+**Examples:**
+- `GET /products` - First 10 products
+- `GET /products?type=CABLE` - Only cables
+- `GET /products?active=true` - Active products only
+
+**Response (200):**
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "name": "USB Cable 3m",
+      "type": "CABLE",
+      "totalQuantity": 50,
+      "availableQuantity": 45,
+      "rentedQuantity": 5,
+      "inRepairQuantity": 0,
+      "active": true
+    }
+  ],
+  "meta": {
+    "total": 25,
+    "page": 1,
+    "pageSize": 10,
+    "totalPages": 3
+  }
+}
+```
+
+---
+
+#### GET /products/:id
+
+Get a specific product by ID.
+
+**Access:** Authenticated
+
+**Response (200):** Full product object
+
+**Errors:**
+| Code | Error Key | Description |
+|------|-----------|-------------|
+| 404 | `PRODUCT_NOT_FOUND` | Product does not exist |
+
+---
+
+#### PATCH /products/:id
+
+Update product data.
+
+**Access:** Authenticated
+
+**Request Body:** Any fields from CreateProductDto (all optional)
+
+**Response (200):** Updated product object
+
+**Errors:**
+| Code | Error Key | Description |
+|------|-----------|-------------|
+| 404 | `PRODUCT_NOT_FOUND` | Product does not exist |
+
+---
+
+#### DELETE /products/:id
+
+Soft delete product (sets `active: false`).
+
+**Access:** Authenticated
+
+**Response (200):** Product with `active: false`
+
+**Errors:**
+| Code | Error Key | Description |
+|------|-----------|-------------|
+| 404 | `PRODUCT_NOT_FOUND` | Product does not exist |
+
+---
+
+#### PATCH /products/:id/reactivate
+
+Reactivate a soft-deleted product.
+
+**Access:** Authenticated
+
+**Response (200):** Product with `active: true`
+
+**Errors:**
+| Code | Error Key | Description |
+|------|-----------|-------------|
+| 404 | `PRODUCT_NOT_FOUND` | Product does not exist |
+
+---
+
+#### POST /products/:id/add-stock
+
+Add new units to inventory (e.g., new purchase).
+
+**Access:** Authenticated
+
+**Request Body:**
+```json
+{
+  "quantity": 10
+}
+```
+
+**Response (200):** Updated product with increased `totalQuantity` and `availableQuantity`
+
+**Errors:**
+| Code | Error Key | Description |
+|------|-----------|-------------|
+| 404 | `PRODUCT_NOT_FOUND` | Product does not exist |
+| 400 | `QUANTITY_MUST_BE_POSITIVE` | Quantity must be > 0 |
+
+---
+
+#### POST /products/:id/retire
+
+Remove units from inventory (e.g., damaged/lost).
+
+**Access:** Authenticated
+
+**Request Body:**
+```json
+{
+  "quantity": 5
+}
+```
+
+**Response (200):** Updated product with decreased `totalQuantity` and `availableQuantity`
+
+**Errors:**
+| Code | Error Key | Description |
+|------|-----------|-------------|
+| 404 | `PRODUCT_NOT_FOUND` | Product does not exist |
+| 400 | `QUANTITY_MUST_BE_POSITIVE` | Quantity must be > 0 |
+| 400 | `NOT_ENOUGH_AVAILABLE_QUANTITY` | Not enough available units |
+
+---
+
+#### POST /products/:id/send-to-repair
+
+Move units from available to repair.
+
+**Access:** Authenticated
+
+**Request Body:**
+```json
+{
+  "quantity": 3
+}
+```
+
+**Response (200):** Updated product with `availableQuantity` decreased and `inRepairQuantity` increased
+
+**Errors:**
+| Code | Error Key | Description |
+|------|-----------|-------------|
+| 404 | `PRODUCT_NOT_FOUND` | Product does not exist |
+| 400 | `QUANTITY_MUST_BE_POSITIVE` | Quantity must be > 0 |
+| 400 | `NOT_ENOUGH_AVAILABLE_QUANTITY` | Not enough available units |
+
+---
+
+#### POST /products/:id/mark-repaired
+
+Return units from repair to available.
+
+**Access:** Authenticated
+
+**Request Body:**
+```json
+{
+  "quantity": 3
+}
+```
+
+**Response (200):** Updated product with `inRepairQuantity` decreased and `availableQuantity` increased
+
+**Errors:**
+| Code | Error Key | Description |
+|------|-----------|-------------|
+| 404 | `PRODUCT_NOT_FOUND` | Product does not exist |
+| 400 | `QUANTITY_MUST_BE_POSITIVE` | Quantity must be > 0 |
+| 400 | `NOT_ENOUGH_IN_REPAIR_QUANTITY` | Not enough units in repair |
+
+---
+
+### Product Units
+
+All `/product-units` endpoints require authentication. Product units are serialized items (tracked by serial number).
+
+#### POST /product-units
+
+Create a new product unit.
+
+**Access:** Authenticated
+
+**Request Body:**
+```json
+{
+  "type": "STOPWATCH",
+  "serialNumber": "SW-2024-001",
+  "notes": "New batch"
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| type | enum | Yes | `ANTENNA`, `STOPWATCH`, `PHONE`, `MIFI`, `CABLE`, `OTHER` |
+| serialNumber | string | Yes | Unique serial number |
+| notes | string | No | Additional notes |
+
+**Response (201):**
+```json
+{
+  "id": 1,
+  "type": "STOPWATCH",
+  "serialNumber": "SW-2024-001",
+  "notes": "New batch",
+  "status": "AVAILABLE",
+  "active": true,
+  "createdAt": "2024-12-16T10:00:00.000Z",
+  "updatedAt": "2024-12-16T10:00:00.000Z"
+}
+```
+
+**Errors:**
+| Code | Error Key | Description |
+|------|-----------|-------------|
+| 400 | `SERIAL_NUMBER_ALREADY_EXISTS` | Serial number already registered |
+
+---
+
+#### GET /product-units
+
+List product units with pagination and filters.
+
+**Access:** Authenticated
+
+**Query Parameters:**
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| page | number | `1` | Page number (min: 1) |
+| pageSize | number | `10` | Items per page (min: 1) |
+| type | enum | - | Filter by product type |
+| status | enum | - | Filter by status |
+| active | boolean | - | Filter by active status |
+
+**Status values:** `AVAILABLE`, `RENTED`, `IN_REPAIR`, `RETIRED`
+
+**Examples:**
+- `GET /product-units` - First 10 units
+- `GET /product-units?type=PHONE&status=AVAILABLE` - Available phones
+- `GET /product-units?active=false` - Inactive units
+
+**Response (200):**
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "type": "STOPWATCH",
+      "serialNumber": "SW-2024-001",
+      "status": "AVAILABLE",
+      "active": true
+    }
+  ],
+  "meta": {
+    "total": 50,
+    "page": 1,
+    "pageSize": 10,
+    "totalPages": 5
+  }
+}
+```
+
+---
+
+#### GET /product-units/serial/:serial
+
+Find product unit by serial number.
+
+**Access:** Authenticated
+
+**Response (200):** Product unit object
+
+**Errors:**
+| Code | Error Key | Description |
+|------|-----------|-------------|
+| 404 | `PRODUCT_UNIT_NOT_FOUND` | No unit with this serial |
+
+---
+
+#### GET /product-units/:id
+
+Get a specific product unit by ID.
+
+**Access:** Authenticated
+
+**Response (200):** Full product unit object
+
+**Errors:**
+| Code | Error Key | Description |
+|------|-----------|-------------|
+| 404 | `PRODUCT_UNIT_NOT_FOUND` | Product unit does not exist |
+
+---
+
+#### PATCH /product-units/:id
+
+Update product unit data.
+
+**Access:** Authenticated
+
+**Request Body:** Any fields from CreateProductUnitDto (all optional)
+
+**Response (200):** Updated product unit object
+
+**Errors:**
+| Code | Error Key | Description |
+|------|-----------|-------------|
+| 404 | `PRODUCT_UNIT_NOT_FOUND` | Product unit does not exist |
+| 400 | `SERIAL_NUMBER_ALREADY_EXISTS` | New serial already taken |
+
+---
+
+#### PATCH /product-units/:id/status
+
+Update product unit status.
+
+**Access:** Authenticated
+
+**Request Body:**
+```json
+{
+  "status": "RENTED"
+}
+```
+
+**Response (200):** Updated product unit object
+
+**Errors:**
+| Code | Error Key | Description |
+|------|-----------|-------------|
+| 404 | `PRODUCT_UNIT_NOT_FOUND` | Product unit does not exist |
+
+---
+
+#### DELETE /product-units/:id
+
+Soft delete product unit (sets `active: false`).
+
+**Access:** Authenticated
+
+**Response (200):** Product unit with `active: false`
+
+**Errors:**
+| Code | Error Key | Description |
+|------|-----------|-------------|
+| 404 | `PRODUCT_UNIT_NOT_FOUND` | Product unit does not exist |
+
+---
+
+#### PATCH /product-units/:id/reactivate
+
+Reactivate a soft-deleted product unit.
+
+**Access:** Authenticated
+
+**Response (200):** Product unit with `active: true`
+
+**Errors:**
+| Code | Error Key | Description |
+|------|-----------|-------------|
+| 404 | `PRODUCT_UNIT_NOT_FOUND` | Product unit does not exist |
+
+---
+
 ## Error Response Format
 
 All errors follow this structure:

@@ -43,8 +43,24 @@ ORM: **Prisma 6.x**
                               │ updatedAt           │
                               └─────────────────────┘
 
+┌─────────────────────┐       ┌─────────────────────┐
+│       Product       │       │     ProductUnit     │
+├─────────────────────┤       ├─────────────────────┤
+│ id (PK)             │       │ id (PK)             │
+│ name                │       │ type                │
+│ type                │       │ serialNumber (uniq) │
+│ description         │       │ notes               │
+│ notes               │       │ status              │
+│ totalQuantity       │       │ active              │
+│ availableQuantity   │       │ createdAt           │
+│ rentedQuantity      │       │ updatedAt           │
+│ inRepairQuantity    │       └─────────────────────┘
+│ active              │
+│ createdAt           │
+│ updatedAt           │
+└─────────────────────┘
+
 Future entities (not yet implemented):
-- Product: Other rental equipment (antennas, cables, etc.)
 - Rental: Track equipment loans
 ```
 
@@ -103,6 +119,28 @@ Regional frequency configuration.
 | FCC | US (FCC regulations) |
 | GX1 | GX1 region |
 | GX2 | GX2 region |
+
+### ProductType
+Types of rental equipment.
+
+| Value | Description |
+|-------|-------------|
+| ANTENNA | Antennas for timing |
+| STOPWATCH | Manual stopwatches |
+| PHONE | Mobile phones |
+| MIFI | MiFi devices |
+| CABLE | Cables |
+| OTHER | Other equipment |
+
+### ProductUnitStatus
+Status for serialized product units.
+
+| Value | Description |
+|-------|-------------|
+| AVAILABLE | Ready to rent |
+| RENTED | Currently rented |
+| IN_REPAIR | Under maintenance |
+| RETIRED | No longer in use |
 
 ---
 
@@ -190,6 +228,40 @@ Timing device manufactured in-house.
 - `operationalStatus` - Filter by operational state
 - `availableForRental` - Filter rentable devices
 
+### Product
+
+Quantity-based rental equipment (tracked by quantity, not individual serial numbers).
+
+| Field | Type | Constraints | Description |
+|-------|------|-------------|-------------|
+| id | Int | PK, auto-increment | Unique identifier |
+| name | String | Required | Product name |
+| type | ProductType | Required | Equipment type |
+| description | String | Optional | Product description |
+| notes | String | Optional | Additional notes |
+| totalQuantity | Int | Default: 0 | Total units owned |
+| availableQuantity | Int | Default: 0 | Units available for rent |
+| rentedQuantity | Int | Default: 0 | Units currently rented |
+| inRepairQuantity | Int | Default: 0 | Units under repair |
+| active | Boolean | Default: true | Soft delete flag |
+| createdAt | DateTime | Auto | Record creation time |
+| updatedAt | DateTime | Auto | Last update time |
+
+### ProductUnit
+
+Serialized rental equipment (tracked individually by serial number).
+
+| Field | Type | Constraints | Description |
+|-------|------|-------------|-------------|
+| id | Int | PK, auto-increment | Unique identifier |
+| type | ProductType | Required | Equipment type |
+| serialNumber | String | Unique, required | Unique serial number |
+| notes | String | Optional | Additional notes |
+| status | ProductUnitStatus | Default: AVAILABLE | Current status |
+| active | Boolean | Default: true | Soft delete flag |
+| createdAt | DateTime | Auto | Record creation time |
+| updatedAt | DateTime | Auto | Last update time |
+
 ---
 
 ## Design Decisions
@@ -199,6 +271,8 @@ Timing device manufactured in-house.
 We use `active: boolean` instead of hard delete for:
 - **Users**: Maintain audit trail, allow reactivation
 - **Clients**: Preserve rental history
+- **Products**: Preserve inventory history
+- **ProductUnits**: Preserve rental/serial tracking history
 
 ### Two Identification Codes for Devices
 
@@ -208,6 +282,17 @@ We use `active: boolean` instead of hard delete for:
 ### Nullable Model-Specific Fields
 
 Device has many optional fields because different models (TSONE, TS2, CLB) have different components. Using nullable fields in a single table instead of separate tables for simplicity.
+
+### Two-Table Approach for Products
+
+Products are split into two independent tables:
+- **Product**: For quantity-tracked items (cables, antennas) where we only care about counts
+- **ProductUnit**: For serialized items (stopwatches, phones) where each unit is tracked individually
+
+This separation provides:
+- Cleaner inventory management (no complex nullable fields)
+- Better serial number tracking for valuable equipment
+- Simpler rental integration (rentals can reference quantities or specific units)
 
 ### Password Storage
 
@@ -255,6 +340,7 @@ pnpm db:studio
 |-----------|-------------|
 | `20251211191813_rename_usuario_to_user` | Initial schema with User model |
 | `20251212200124_add_client_and_device` | Add Client and Device models |
+| `20251216171645_add_products_and_product_units` | Add Product and ProductUnit models |
 
 ---
 
@@ -283,12 +369,9 @@ pnpm db:seed
 
 ## Future Schema (Planned)
 
-### Product
-Other rental equipment.
-- Antennas, stopwatches, cables, phones
-- Some have serial numbers, some don't
-
 ### Rental
-Equipment loans.
-- What equipment, to whom, when
+Equipment loans tracking.
+- What equipment (devices, products, product units)
+- To whom (client)
+- When (start/end dates)
 - Status tracking

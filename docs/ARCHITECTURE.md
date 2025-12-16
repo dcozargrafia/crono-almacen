@@ -56,6 +56,18 @@ crono-almacen/
 │   │   ├── devices.module.ts
 │   │   ├── devices.service.ts
 │   │   └── devices.service.spec.ts
+│   ├── products/           # Product management module (quantity-based)
+│   │   ├── dto/            # CreateProductDto, QuantityDto, etc.
+│   │   ├── products.controller.ts
+│   │   ├── products.module.ts
+│   │   ├── products.service.ts
+│   │   └── products.service.spec.ts
+│   ├── product-units/      # ProductUnit management module (serial-based)
+│   │   ├── dto/            # CreateProductUnitDto, UpdateStatusDto, etc.
+│   │   ├── product-units.controller.ts
+│   │   ├── product-units.module.ts
+│   │   ├── product-units.service.ts
+│   │   └── product-units.service.spec.ts
 │   ├── types/              # Shared TypeScript types
 │   │   ├── index.ts        # Re-exports from Prisma + app types
 │   │   └── express.d.ts    # Express type augmentation
@@ -290,13 +302,70 @@ app.useGlobalPipes(
 
 ---
 
+## Architectural Decisions
+
+### ADR-001: Product Inventory Management
+
+**Context:** Products need quantity tracking (totalQuantity, availableQuantity, rentedQuantity, inRepairQuantity). When implementing the Rentals module, we need to decide how to coordinate quantity changes between Products and Rentals.
+
+**Decision:** Use **service-level integration** (not HTTP endpoints) for rental-related quantity changes.
+
+**Options Considered:**
+
+| Option | Description | Pros | Cons |
+|--------|-------------|------|------|
+| A. HTTP endpoints | Products exposes `/rent`, `/return` endpoints. Rentals calls them via HTTP. | Clear separation | Distributed transaction problem, latency |
+| B. Direct DB access | Rentals directly updates Product quantities via Prisma | Simple, single transaction | Logic scattered, Products loses control |
+| **C. Service methods** | Products exposes internal methods. Rentals imports ProductsService. | Single transaction, clear ownership | Module coupling |
+| D. Events | Rentals emits events, Products listens | Full decoupling | Complexity, eventual consistency |
+
+**Implementation:**
+
+```typescript
+// ProductsService - Internal methods (NOT HTTP endpoints)
+async rentQuantity(id: number, quantity: number) { ... }    // Called by RentalsService
+async returnQuantity(id: number, quantity: number) { ... }  // Called by RentalsService
+
+// ProductsService - HTTP endpoints (admin operations)
+POST /products/:id/add-stock      // New inventory
+POST /products/:id/retire         // Damaged/lost units
+POST /products/:id/send-to-repair // Move to repair
+POST /products/:id/mark-repaired  // Return from repair
+```
+
+**Consequences:**
+- Rentals will import ProductsService via dependency injection
+- Rental operations (rent/return) will be transactional using `prisma.$transaction`
+- Admin operations (add-stock, retire, repair) remain as HTTP endpoints
+- Products maintains ownership of inventory logic
+
+---
+
+### ADR-002: Two-Table Approach for Products
+
+**Context:** Rental equipment includes both quantity-tracked items (cables, antennas) and serial-tracked items (stopwatches, phones).
+
+**Decision:** Use two separate, independent tables.
+
+| Table | Use Case | Tracking |
+|-------|----------|----------|
+| Product | Cables, antennas | By quantity |
+| ProductUnit | Stopwatches, phones | By serial number |
+
+**Consequences:**
+- Rentals will have separate relations: `products` (quantity) and `productUnits` (serial)
+- No foreign key between Product and ProductUnit (they're independent)
+- ProductUnit uses status enum (AVAILABLE, RENTED, IN_REPAIR, RETIRED)
+- Product uses quantity fields (totalQuantity, availableQuantity, etc.)
+
+---
+
 ## Future Considerations
 
-When adding new modules (Devices, Products, Rentals):
+When adding the Rentals module:
 
-1. Follow the same module pattern
-2. Add relations in Prisma schema
-3. Create migrations
-4. Add audit fields (`createdBy`, `updatedBy`) where needed
-5. Write unit tests for services
-6. Update API documentation
+1. Import ProductsService and ProductUnitsService
+2. Use `prisma.$transaction` for atomic operations
+3. Call `productsService.rentQuantity()` / `returnQuantity()` internally
+4. Call `productUnitsService.updateStatus()` for serial-tracked items
+5. Do NOT create HTTP endpoints for rental quantity operations in Products

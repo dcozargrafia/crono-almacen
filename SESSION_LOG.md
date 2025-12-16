@@ -206,8 +206,102 @@ Implement Devices module with full CRUD using TDD.
   - AppController: 3 tests
 
 ### Pending / Next Session
-- [ ] Test Devices endpoints with Postman
-- [ ] Implement Product module
+- Completed in Session 5
+
+### Questions / Doubts
+- (none)
+
+---
+
+## Session 5 - 2024-12-16
+
+### Objective
+Implement Products module for rental equipment (non-device items).
+
+### Completed
+- [x] Designed two-table architecture for products:
+  - Product: quantity-tracked items (cables, antennas)
+  - ProductUnit: serial-tracked items (stopwatches, phones, MiFi)
+- [x] Updated Prisma schema with Product and ProductUnit models
+- [x] Created ProductType and ProductUnitStatus enums
+- [x] Generated migration `20251216171645_add_products_and_product_units`
+- [x] Generated NestJS modules for both products and product-units
+- [x] Implemented ProductsService with TDD (15 tests):
+  - create() - initializes quantities
+  - findAll() - with pagination and filters (type, active)
+  - findOne() - with NotFoundException
+  - update() - standard update
+  - remove() - soft delete (active: false)
+  - reactivate() - restore soft-deleted product
+- [x] Implemented ProductUnitsService with TDD (20 tests):
+  - create() - with serialNumber duplicate validation
+  - findAll() - with pagination and filters (type, status, active)
+  - findOne() - with NotFoundException
+  - findBySerial() - find by serial number
+  - update() - with serialNumber duplicate validation
+  - updateStatus() - update unit status
+  - remove() - soft delete
+  - reactivate() - restore soft-deleted unit
+- [x] Implemented ProductsController with all endpoints
+- [x] Implemented ProductUnitsController with all endpoints
+- [x] Added quantity validation in Product update (totalQuantity >= used)
+- [x] Implemented inventory management endpoints (TDD - 17 additional tests):
+  - addStock() - Add units to inventory
+  - retire() - Remove units from inventory
+  - sendToRepair() - Move to repair
+  - markRepaired() - Return from repair
+- [x] Created QuantityDto for inventory operations
+- [x] Documented architectural decisions (ADR-001, ADR-002)
+- [x] Updated documentation (API.md, DATABASE.md, ARCHITECTURE.md, CHANGELOG.md)
+
+### Decisions Made
+- **Two-table approach**: Product (quantity) vs ProductUnit (serial) for cleaner separation
+- **Independent tables**: ProductUnit is NOT related to Product (different use cases)
+- **Quantity initialization**: When creating a product, availableQuantity = totalQuantity
+- **Status for units**: ProductUnitStatus (AVAILABLE, RENTED, IN_REPAIR, RETIRED)
+- **Soft delete**: Both use `active: boolean` field
+- **Inventory operations**: HTTP endpoints for admin operations (add-stock, retire, repair)
+- **Rental integration**: Service methods (not HTTP) for rental-related quantity changes (ADR-001)
+
+### API Endpoints (Products)
+| Method | Endpoint | Description | Access |
+|--------|----------|-------------|--------|
+| POST | /products | Create product | Authenticated |
+| GET | /products | List products (with pagination and filters) | Authenticated |
+| GET | /products/:id | Get product | Authenticated |
+| PATCH | /products/:id | Update product | Authenticated |
+| PATCH | /products/:id/reactivate | Reactivate product | Authenticated |
+| DELETE | /products/:id | Soft delete product | Authenticated |
+| POST | /products/:id/add-stock | Add units to inventory | Authenticated |
+| POST | /products/:id/retire | Remove units (damaged/lost) | Authenticated |
+| POST | /products/:id/send-to-repair | Move units to repair | Authenticated |
+| POST | /products/:id/mark-repaired | Return units from repair | Authenticated |
+
+### API Endpoints (Product Units)
+| Method | Endpoint | Description | Access |
+|--------|----------|-------------|--------|
+| POST | /product-units | Create product unit | Authenticated |
+| GET | /product-units | List units (with pagination and filters) | Authenticated |
+| GET | /product-units/serial/:serial | Find by serial number | Authenticated |
+| GET | /product-units/:id | Get product unit | Authenticated |
+| PATCH | /product-units/:id | Update product unit | Authenticated |
+| PATCH | /product-units/:id/status | Update status | Authenticated |
+| PATCH | /product-units/:id/reactivate | Reactivate unit | Authenticated |
+| DELETE | /product-units/:id | Soft delete unit | Authenticated |
+
+### Test Summary
+- Total tests: 120 (all passing)
+  - AuthService: 8 tests
+  - UsersService: 13 tests
+  - ClientsService: 15 tests
+  - DevicesService: 29 tests
+  - ProductsService: 32 tests (15 CRUD + 17 inventory)
+  - ProductUnitsService: 20 tests
+  - AppController: 3 tests
+
+### Pending / Next Session
+- [ ] Test Products endpoints with Postman
+- [ ] Test ProductUnits endpoints with Postman
 - [ ] Implement Rental module
 
 ### Questions / Doubts

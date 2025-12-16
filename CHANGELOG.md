@@ -10,6 +10,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Product management module (quantity-based rental equipment)
+  - `POST /products` - Create product
+  - `GET /products` - List products (with pagination and filters)
+  - `GET /products/:id` - Get product
+  - `PATCH /products/:id` - Update product
+  - `PATCH /products/:id/reactivate` - Reactivate soft-deleted product
+  - `DELETE /products/:id` - Soft delete product
+- ProductUnit management module (serialized rental equipment)
+  - `POST /product-units` - Create product unit
+  - `GET /product-units` - List product units (with pagination and filters)
+  - `GET /product-units/serial/:serial` - Find by serial number
+  - `GET /product-units/:id` - Get product unit
+  - `PATCH /product-units/:id` - Update product unit
+  - `PATCH /product-units/:id/status` - Update status
+  - `PATCH /product-units/:id/reactivate` - Reactivate soft-deleted unit
+  - `DELETE /product-units/:id` - Soft delete product unit
+- New enums: ProductType, ProductUnitStatus
+- Product inventory management endpoints:
+  - `POST /products/:id/add-stock` - Add units to inventory
+  - `POST /products/:id/retire` - Remove units from inventory
+  - `POST /products/:id/send-to-repair` - Move to repair
+  - `POST /products/:id/mark-repaired` - Return from repair
+- Quantity validation in product update (totalQuantity >= used quantities)
+- Unit tests for ProductsService (32 tests with TDD)
+- Unit tests for ProductUnitsService (20 tests with TDD)
+- Architectural Decision Records (ADR-001, ADR-002) for inventory management
 - Device management module (CRUD for authenticated users)
   - `POST /devices` - Create device
   - `GET /devices` - List devices (with pagination and filters)
@@ -44,8 +70,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Seed data: Cronochip as internal client
 
 ### Planned
-- Product module (rental equipment)
-- Rental module
+- Rental module (track equipment loans)
 
 ---
 
