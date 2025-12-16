@@ -10,6 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- CSV file upload for chip sequences (`PUT /chip-types/:id/sequence`)
+  - Accepts multipart/form-data with CSV file
+  - Validates CSV format (Chip,Code columns)
+  - Case-insensitive column matching
+- CSV file download for rental chip sequences (`GET /rentals/:id/chip-file/:chipTypeId`)
+  - Generates downloadable CSV file for client
+  - Filename format: `{client}-{date}-{chiptype}-rent.csv`
 - Chip types management module (timing chips: Triton, Clipchip, Pod, Activo)
   - `POST /chip-types` - Create chip type
   - `GET /chip-types` - List chip types (without sequenceData)

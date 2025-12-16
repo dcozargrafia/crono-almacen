@@ -764,4 +764,138 @@ describe('RentalsService', () => {
       expect(result).toEqual([]);
     });
   });
+
+  describe('getChipFileForRental', () => {
+    it('should return CSV content and filename for a chip type in rental', async () => {
+      // Arrange
+      const mockRental = createMockRental({
+        client: createMockClient({ name: 'Test Client' }),
+        startDate: new Date('2024-01-15'),
+        chipRanges: [
+          {
+            id: 1,
+            chipTypeId: 1,
+            rangeStart: 1,
+            rangeEnd: 3,
+            chipType: createMockChipType({
+              id: 1,
+              name: 'TRITON',
+              sequenceData: [
+                { chip: 1, code: 'A1' },
+                { chip: 2, code: 'A2' },
+                { chip: 3, code: 'A3' },
+                { chip: 4, code: 'A4' },
+              ],
+            }),
+          },
+        ],
+      });
+      mockPrismaService.rental.findUnique.mockResolvedValue(mockRental);
+
+      // Act
+      const result = await service.getChipFileForRental(1, 1);
+
+      // Assert
+      expect(result.filename).toBe('test-client-20240115-triton-rent.csv');
+      expect(result.csv).toContain('Chip,Code');
+      expect(result.csv).toContain('1,A1');
+      expect(result.csv).toContain('2,A2');
+      expect(result.csv).toContain('3,A3');
+      expect(result.csv).not.toContain('4,A4');
+    });
+
+    it('should throw NotFoundException if rental does not exist', async () => {
+      // Arrange
+      mockPrismaService.rental.findUnique.mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(service.getChipFileForRental(999, 1)).rejects.toThrow(
+        NotFoundException,
+      );
+      await expect(service.getChipFileForRental(999, 1)).rejects.toThrow(
+        'RENTAL_NOT_FOUND',
+      );
+    });
+
+    it('should throw NotFoundException if chip type is not in rental', async () => {
+      // Arrange
+      const mockRental = createMockRental({
+        client: createMockClient(),
+        chipRanges: [
+          {
+            id: 1,
+            chipTypeId: 1,
+            rangeStart: 1,
+            rangeEnd: 100,
+            chipType: createMockChipType({ id: 1 }),
+          },
+        ],
+      });
+      mockPrismaService.rental.findUnique.mockResolvedValue(mockRental);
+
+      // Act & Assert
+      await expect(service.getChipFileForRental(1, 999)).rejects.toThrow(
+        NotFoundException,
+      );
+      await expect(service.getChipFileForRental(1, 999)).rejects.toThrow(
+        'CHIP_TYPE_NOT_IN_RENTAL',
+      );
+    });
+
+    it('should sanitize client name for filename', async () => {
+      // Arrange
+      const mockRental = createMockRental({
+        client: createMockClient({ name: 'Café & Bar "Test"' }),
+        startDate: new Date('2024-06-20'),
+        chipRanges: [
+          {
+            id: 1,
+            chipTypeId: 1,
+            rangeStart: 1,
+            rangeEnd: 1,
+            chipType: createMockChipType({
+              id: 1,
+              name: 'POD',
+              sequenceData: [{ chip: 1, code: 'X1' }],
+            }),
+          },
+        ],
+      });
+      mockPrismaService.rental.findUnique.mockResolvedValue(mockRental);
+
+      // Act
+      const result = await service.getChipFileForRental(1, 1);
+
+      // Assert
+      expect(result.filename).toBe('caf-bar-test-20240620-pod-rent.csv');
+    });
+
+    it('should return empty CSV (only headers) if sequence data is null', async () => {
+      // Arrange
+      const mockRental = createMockRental({
+        client: createMockClient({ name: 'Client' }),
+        startDate: new Date('2024-01-01'),
+        chipRanges: [
+          {
+            id: 1,
+            chipTypeId: 1,
+            rangeStart: 1,
+            rangeEnd: 100,
+            chipType: createMockChipType({
+              id: 1,
+              name: 'TRITON',
+              sequenceData: null,
+            }),
+          },
+        ],
+      });
+      mockPrismaService.rental.findUnique.mockResolvedValue(mockRental);
+
+      // Act
+      const result = await service.getChipFileForRental(1, 1);
+
+      // Assert
+      expect(result.csv).toBe('Chip,Code\n');
+    });
+  });
 });

@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
+import { stringify } from 'csv-stringify/sync';
 import { PrismaService } from '../prisma.service';
 import { ProductsService } from '../products/products.service';
 import { CreateRentalDto } from './dto/create-rental.dto';
@@ -443,5 +444,72 @@ export class RentalsService {
         sequence: filteredSequence,
       };
     });
+  }
+
+  // GET /rentals/:id/chip-file/:chipTypeId - Generate CSV file for chip type
+  async getChipFileForRental(
+    rentalId: number,
+    chipTypeId: number,
+  ): Promise<{ csv: string; filename: string }> {
+    const rental = await this.prisma.rental.findUnique({
+      where: { id: rentalId },
+      include: {
+        client: true,
+        chipRanges: { include: { chipType: true } },
+      },
+    });
+
+    if (!rental) {
+      throw new NotFoundException('RENTAL_NOT_FOUND');
+    }
+
+    const chipRange = rental.chipRanges?.find(
+      (range) => range.chipTypeId === chipTypeId,
+    );
+
+    if (!chipRange) {
+      throw new NotFoundException('CHIP_TYPE_NOT_IN_RENTAL');
+    }
+
+    const sequenceData =
+      (chipRange.chipType.sequenceData as { chip: number; code: string }[]) ||
+      [];
+
+    const filteredSequence = sequenceData.filter(
+      (item) =>
+        item.chip >= chipRange.rangeStart && item.chip <= chipRange.rangeEnd,
+    );
+
+    const csv = stringify(filteredSequence, {
+      header: true,
+      columns: [
+        { key: 'chip', header: 'Chip' },
+        { key: 'code', header: 'Code' },
+      ],
+    });
+
+    // Format: cliente-aaaammdd-chiptype-rent.csv
+    const clientName = this.sanitizeFilename(rental.client.name);
+    const dateStr = this.formatDateForFilename(rental.startDate);
+    const chipTypeName = chipRange.chipType.name.toLowerCase();
+    const filename = `${clientName}-${dateStr}-${chipTypeName}-rent.csv`;
+
+    return { csv, filename };
+  }
+
+  private sanitizeFilename(name: string): string {
+    return name
+      .toLowerCase()
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9-]/g, '')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+  }
+
+  private formatDateForFilename(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}${month}${day}`;
   }
 }

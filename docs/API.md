@@ -1479,6 +1479,44 @@ Get chip sequences for all chip ranges in a rental (for generating client files)
 
 ---
 
+#### GET /rentals/:id/chip-file/:chipTypeId
+
+Download chip sequence as CSV file for a specific chip type in a rental.
+
+**Access:** Authenticated
+
+**Response:** CSV file download
+
+**Headers:**
+```
+Content-Type: text/csv
+Content-Disposition: attachment; filename="clientname-yyyymmdd-chiptype-rent.csv"
+```
+
+**CSV Content:**
+```csv
+Chip,Code
+1,AA1234
+2,AA1235
+...
+```
+
+**Filename Format:** `{client-name}-{yyyymmdd}-{chiptype}-rent.csv`
+- `client-name`: Client name, sanitized (lowercase, alphanumeric, hyphens)
+- `yyyymmdd`: Rental start date
+- `chiptype`: Chip type name (lowercase)
+
+**Example:**
+- `GET /rentals/1/chip-file/1` → `acme-sports-20240115-triton-rent.csv`
+
+**Errors:**
+| Code | Error Key | Description |
+|------|-----------|-------------|
+| 404 | `RENTAL_NOT_FOUND` | Rental does not exist |
+| 404 | `CHIP_TYPE_NOT_IN_RENTAL` | Chip type not included in this rental |
+
+---
+
 ### Chip Types
 
 All `/chip-types` endpoints require authentication. Chip types manage timing chips (Triton, Clipchip, Pod, Activo) and their sequences.
@@ -1619,19 +1657,30 @@ Delete a chip type.
 
 #### PUT /chip-types/:id/sequence
 
-Upload sequence data for a chip type.
+Upload sequence data for a chip type from CSV file.
 
 **Access:** Authenticated
 
+**Content-Type:** `multipart/form-data`
+
 **Request Body:**
-```json
-{
-  "sequence": [
-    { "chip": 1, "code": "AA1234" },
-    { "chip": 2, "code": "AA1235" },
-    { "chip": 3, "code": "AA1236" }
-  ]
-}
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| file | File | Yes | CSV file with Chip,Code columns |
+
+**CSV Format:**
+```csv
+Chip,Code
+1,AA1234
+2,AA1235
+3,AA1236
+```
+
+**Example with curl:**
+```bash
+curl -X PUT http://localhost:3000/chip-types/1/sequence \
+  -H "Authorization: Bearer <token>" \
+  -F "file=@sequence.csv"
 ```
 
 **Response (200):** Updated chip type with new sequenceData
@@ -1639,6 +1688,11 @@ Upload sequence data for a chip type.
 **Errors:**
 | Code | Error Key | Description |
 |------|-----------|-------------|
+| 400 | `FILE_REQUIRED` | No file uploaded |
+| 400 | `CSV_EMPTY` | CSV file has no data rows |
+| 400 | `CSV_INVALID_COLUMNS` | Missing Chip or Code column |
+| 400 | `CSV_INVALID_CHIP_VALUE_AT_ROW_X` | Invalid chip value at row X |
+| 400 | `CSV_PARSE_ERROR` | Generic CSV parsing error |
 | 404 | `CHIP_TYPE_NOT_FOUND` | Chip type does not exist |
 
 ---

@@ -4,7 +4,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ChipTypesController } from './chip-types.controller';
 import { ChipTypesService } from './chip-types.service';
-import { NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  NotFoundException,
+  ConflictException,
+  BadRequestException,
+} from '@nestjs/common';
 
 describe('ChipTypesController', () => {
   let controller: ChipTypesController;
@@ -28,7 +32,7 @@ describe('ChipTypesController', () => {
       findOne: jest.fn(),
       update: jest.fn(),
       remove: jest.fn(),
-      uploadSequence: jest.fn(),
+      uploadSequenceFromCsv: jest.fn(),
       getSequence: jest.fn(),
       getSequenceRange: jest.fn(),
     };
@@ -174,35 +178,52 @@ describe('ChipTypesController', () => {
   });
 
   describe('PUT /chip-types/:id/sequence', () => {
-    it('should upload sequence data', async () => {
+    const createMockFile = (content: string): Express.Multer.File =>
+      ({
+        buffer: Buffer.from(content),
+        originalname: 'sequence.csv',
+        mimetype: 'text/csv',
+      }) as Express.Multer.File;
+
+    it('should upload sequence from CSV file', async () => {
       // Arrange
       const sequenceData = [
         { chip: 1, code: 'ABC123' },
         { chip: 2, code: 'DEF456' },
       ];
       const updatedChipType = createMockChipType({ sequenceData });
-      mockService.uploadSequence.mockResolvedValue(updatedChipType);
+      const mockFile = createMockFile('Chip,Code\n1,ABC123\n2,DEF456');
+      mockService.uploadSequenceFromCsv.mockResolvedValue(updatedChipType);
 
       // Act
-      const result = await controller.uploadSequence(1, {
-        sequence: sequenceData,
-      });
+      const result = await controller.uploadSequence(1, mockFile);
 
       // Assert
       expect(result.sequenceData).toEqual(sequenceData);
-      expect(mockService.uploadSequence).toHaveBeenCalledWith(1, sequenceData);
+      expect(mockService.uploadSequenceFromCsv).toHaveBeenCalledWith(
+        1,
+        mockFile.buffer,
+      );
+    });
+
+    it('should throw BadRequestException if no file provided', () => {
+      // Act & Assert
+      expect(() =>
+        controller.uploadSequence(1, undefined as unknown as Express.Multer.File),
+      ).toThrow(BadRequestException);
     });
 
     it('should propagate NotFoundException', async () => {
       // Arrange
-      mockService.uploadSequence.mockRejectedValue(
+      const mockFile = createMockFile('Chip,Code\n1,ABC123');
+      mockService.uploadSequenceFromCsv.mockRejectedValue(
         new NotFoundException('CHIP_TYPE_NOT_FOUND'),
       );
 
       // Act & Assert
-      await expect(
-        controller.uploadSequence(999, { sequence: [] }),
-      ).rejects.toThrow('CHIP_TYPE_NOT_FOUND');
+      await expect(controller.uploadSequence(999, mockFile)).rejects.toThrow(
+        'CHIP_TYPE_NOT_FOUND',
+      );
     });
   });
 

@@ -10,11 +10,14 @@ import {
   Query,
   ParseIntPipe,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { ChipTypesService } from './chip-types.service';
 import { CreateChipTypeDto } from './dto/create-chip-type.dto';
 import { UpdateChipTypeDto } from './dto/update-chip-type.dto';
-import { UploadSequenceDto } from './dto/upload-sequence.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('chip-types')
@@ -55,13 +58,17 @@ export class ChipTypesController {
     return this.chipTypesService.remove(id);
   }
 
-  // PUT /chip-types/:id/sequence - Upload sequence data
+  // PUT /chip-types/:id/sequence - Upload sequence CSV file
   @Put(':id/sequence')
+  @UseInterceptors(FileInterceptor('file'))
   uploadSequence(
     @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UploadSequenceDto,
+    @UploadedFile() file: Express.Multer.File,
   ) {
-    return this.chipTypesService.uploadSequence(id, dto.sequence);
+    if (!file) {
+      throw new BadRequestException('FILE_REQUIRED');
+    }
+    return this.chipTypesService.uploadSequenceFromCsv(id, file.buffer);
   }
 
   // GET /chip-types/:id/sequence - Get sequence (full or range)

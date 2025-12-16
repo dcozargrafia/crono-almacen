@@ -6,9 +6,11 @@ import {
   Body,
   Param,
   Query,
+  Res,
   ParseIntPipe,
   UseGuards,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { RentalsService } from './rentals.service';
 import { CreateRentalDto } from './dto/create-rental.dto';
 import { UpdateRentalDto } from './dto/update-rental.dto';
@@ -73,5 +75,22 @@ export class RentalsController {
   @Get(':id/chip-sequence')
   getChipSequence(@Param('id', ParseIntPipe) id: number) {
     return this.rentalsService.getChipSequenceForRental(id);
+  }
+
+  // GET /rentals/:id/chip-file/:chipTypeId - Download chip sequence CSV
+  @Get(':id/chip-file/:chipTypeId')
+  async getChipFile(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('chipTypeId', ParseIntPipe) chipTypeId: number,
+    @Res() res: Response,
+  ) {
+    const { csv, filename } = await this.rentalsService.getChipFileForRental(
+      id,
+      chipTypeId,
+    );
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(csv);
   }
 }
