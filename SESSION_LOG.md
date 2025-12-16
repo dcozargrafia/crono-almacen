@@ -244,7 +244,15 @@ Implement Products module for rental equipment (non-device items).
   - reactivate() - restore soft-deleted unit
 - [x] Implemented ProductsController with all endpoints
 - [x] Implemented ProductUnitsController with all endpoints
-- [x] Updated documentation (API.md, DATABASE.md, CHANGELOG.md)
+- [x] Added quantity validation in Product update (totalQuantity >= used)
+- [x] Implemented inventory management endpoints (TDD - 17 additional tests):
+  - addStock() - Add units to inventory
+  - retire() - Remove units from inventory
+  - sendToRepair() - Move to repair
+  - markRepaired() - Return from repair
+- [x] Created QuantityDto for inventory operations
+- [x] Documented architectural decisions (ADR-001, ADR-002)
+- [x] Updated documentation (API.md, DATABASE.md, ARCHITECTURE.md, CHANGELOG.md)
 
 ### Decisions Made
 - **Two-table approach**: Product (quantity) vs ProductUnit (serial) for cleaner separation
@@ -252,6 +260,8 @@ Implement Products module for rental equipment (non-device items).
 - **Quantity initialization**: When creating a product, availableQuantity = totalQuantity
 - **Status for units**: ProductUnitStatus (AVAILABLE, RENTED, IN_REPAIR, RETIRED)
 - **Soft delete**: Both use `active: boolean` field
+- **Inventory operations**: HTTP endpoints for admin operations (add-stock, retire, repair)
+- **Rental integration**: Service methods (not HTTP) for rental-related quantity changes (ADR-001)
 
 ### API Endpoints (Products)
 | Method | Endpoint | Description | Access |
@@ -262,6 +272,10 @@ Implement Products module for rental equipment (non-device items).
 | PATCH | /products/:id | Update product | Authenticated |
 | PATCH | /products/:id/reactivate | Reactivate product | Authenticated |
 | DELETE | /products/:id | Soft delete product | Authenticated |
+| POST | /products/:id/add-stock | Add units to inventory | Authenticated |
+| POST | /products/:id/retire | Remove units (damaged/lost) | Authenticated |
+| POST | /products/:id/send-to-repair | Move units to repair | Authenticated |
+| POST | /products/:id/mark-repaired | Return units from repair | Authenticated |
 
 ### API Endpoints (Product Units)
 | Method | Endpoint | Description | Access |
@@ -276,12 +290,12 @@ Implement Products module for rental equipment (non-device items).
 | DELETE | /product-units/:id | Soft delete unit | Authenticated |
 
 ### Test Summary
-- Total tests: 103 (all passing)
+- Total tests: 120 (all passing)
   - AuthService: 8 tests
   - UsersService: 13 tests
   - ClientsService: 15 tests
   - DevicesService: 29 tests
-  - ProductsService: 15 tests
+  - ProductsService: 32 tests (15 CRUD + 17 inventory)
   - ProductUnitsService: 20 tests
   - AppController: 3 tests
 

@@ -14,6 +14,7 @@ import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { QueryProductsDto } from './dto/query-products.dto';
+import { QuantityDto } from './dto/quantity.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('products')
@@ -63,5 +64,35 @@ export class ProductsController {
   @Patch(':id/reactivate')
   reactivate(@Param('id', ParseIntPipe) id: number) {
     return this.productsService.reactivate(id);
+  }
+
+  // POST /products/:id/add-stock - Add units to inventory
+  @Post(':id/add-stock')
+  addStock(@Param('id', ParseIntPipe) id: number, @Body() dto: QuantityDto) {
+    return this.productsService.addStock(id, dto.quantity);
+  }
+
+  // POST /products/:id/retire - Remove units from inventory
+  @Post(':id/retire')
+  retire(@Param('id', ParseIntPipe) id: number, @Body() dto: QuantityDto) {
+    return this.productsService.retire(id, dto.quantity);
+  }
+
+  // POST /products/:id/send-to-repair - Move units to repair
+  @Post(':id/send-to-repair')
+  sendToRepair(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: QuantityDto,
+  ) {
+    return this.productsService.sendToRepair(id, dto.quantity);
+  }
+
+  // POST /products/:id/mark-repaired - Return units from repair to available
+  @Post(':id/mark-repaired')
+  markRepaired(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: QuantityDto,
+  ) {
+    return this.productsService.markRepaired(id, dto.quantity);
   }
 }

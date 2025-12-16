@@ -936,6 +936,101 @@ Reactivate a soft-deleted product.
 
 ---
 
+#### POST /products/:id/add-stock
+
+Add new units to inventory (e.g., new purchase).
+
+**Access:** Authenticated
+
+**Request Body:**
+```json
+{
+  "quantity": 10
+}
+```
+
+**Response (200):** Updated product with increased `totalQuantity` and `availableQuantity`
+
+**Errors:**
+| Code | Error Key | Description |
+|------|-----------|-------------|
+| 404 | `PRODUCT_NOT_FOUND` | Product does not exist |
+| 400 | `QUANTITY_MUST_BE_POSITIVE` | Quantity must be > 0 |
+
+---
+
+#### POST /products/:id/retire
+
+Remove units from inventory (e.g., damaged/lost).
+
+**Access:** Authenticated
+
+**Request Body:**
+```json
+{
+  "quantity": 5
+}
+```
+
+**Response (200):** Updated product with decreased `totalQuantity` and `availableQuantity`
+
+**Errors:**
+| Code | Error Key | Description |
+|------|-----------|-------------|
+| 404 | `PRODUCT_NOT_FOUND` | Product does not exist |
+| 400 | `QUANTITY_MUST_BE_POSITIVE` | Quantity must be > 0 |
+| 400 | `NOT_ENOUGH_AVAILABLE_QUANTITY` | Not enough available units |
+
+---
+
+#### POST /products/:id/send-to-repair
+
+Move units from available to repair.
+
+**Access:** Authenticated
+
+**Request Body:**
+```json
+{
+  "quantity": 3
+}
+```
+
+**Response (200):** Updated product with `availableQuantity` decreased and `inRepairQuantity` increased
+
+**Errors:**
+| Code | Error Key | Description |
+|------|-----------|-------------|
+| 404 | `PRODUCT_NOT_FOUND` | Product does not exist |
+| 400 | `QUANTITY_MUST_BE_POSITIVE` | Quantity must be > 0 |
+| 400 | `NOT_ENOUGH_AVAILABLE_QUANTITY` | Not enough available units |
+
+---
+
+#### POST /products/:id/mark-repaired
+
+Return units from repair to available.
+
+**Access:** Authenticated
+
+**Request Body:**
+```json
+{
+  "quantity": 3
+}
+```
+
+**Response (200):** Updated product with `inRepairQuantity` decreased and `availableQuantity` increased
+
+**Errors:**
+| Code | Error Key | Description |
+|------|-----------|-------------|
+| 404 | `PRODUCT_NOT_FOUND` | Product does not exist |
+| 400 | `QUANTITY_MUST_BE_POSITIVE` | Quantity must be > 0 |
+| 400 | `NOT_ENOUGH_IN_REPAIR_QUANTITY` | Not enough units in repair |
+
+---
+
 ### Product Units
 
 All `/product-units` endpoints require authentication. Product units are serialized items (tracked by serial number).

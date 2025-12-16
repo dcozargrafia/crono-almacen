@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { PrismaService } from '../prisma.service';
@@ -84,6 +88,18 @@ export class ProductsService {
       throw new NotFoundException('PRODUCT_NOT_FOUND');
     }
 
+    // Validate quantity coherence if totalQuantity is being updated
+    if (updateProductDto.totalQuantity !== undefined) {
+      const usedQuantity =
+        product.availableQuantity +
+        product.rentedQuantity +
+        product.inRepairQuantity;
+
+      if (updateProductDto.totalQuantity < usedQuantity) {
+        throw new BadRequestException('TOTAL_QUANTITY_BELOW_USED');
+      }
+    }
+
     return this.prisma.product.update({
       where: { id },
       data: updateProductDto,
@@ -119,6 +135,110 @@ export class ProductsService {
     return this.prisma.product.update({
       where: { id },
       data: { active: true },
+    });
+  }
+
+  // POST /products/:id/add-stock - Add units to inventory
+  async addStock(id: number, quantity: number) {
+    const product = await this.prisma.product.findUnique({
+      where: { id },
+    });
+
+    if (!product) {
+      throw new NotFoundException('PRODUCT_NOT_FOUND');
+    }
+
+    if (quantity <= 0) {
+      throw new BadRequestException('QUANTITY_MUST_BE_POSITIVE');
+    }
+
+    return this.prisma.product.update({
+      where: { id },
+      data: {
+        totalQuantity: product.totalQuantity + quantity,
+        availableQuantity: product.availableQuantity + quantity,
+      },
+    });
+  }
+
+  // POST /products/:id/retire - Remove units from inventory
+  async retire(id: number, quantity: number) {
+    const product = await this.prisma.product.findUnique({
+      where: { id },
+    });
+
+    if (!product) {
+      throw new NotFoundException('PRODUCT_NOT_FOUND');
+    }
+
+    if (quantity <= 0) {
+      throw new BadRequestException('QUANTITY_MUST_BE_POSITIVE');
+    }
+
+    if (product.availableQuantity < quantity) {
+      throw new BadRequestException('NOT_ENOUGH_AVAILABLE_QUANTITY');
+    }
+
+    return this.prisma.product.update({
+      where: { id },
+      data: {
+        totalQuantity: product.totalQuantity - quantity,
+        availableQuantity: product.availableQuantity - quantity,
+      },
+    });
+  }
+
+  // POST /products/:id/send-to-repair - Move units to repair
+  async sendToRepair(id: number, quantity: number) {
+    const product = await this.prisma.product.findUnique({
+      where: { id },
+    });
+
+    if (!product) {
+      throw new NotFoundException('PRODUCT_NOT_FOUND');
+    }
+
+    if (quantity <= 0) {
+      throw new BadRequestException('QUANTITY_MUST_BE_POSITIVE');
+    }
+
+    if (product.availableQuantity < quantity) {
+      throw new BadRequestException('NOT_ENOUGH_AVAILABLE_QUANTITY');
+    }
+
+    return this.prisma.product.update({
+      where: { id },
+      data: {
+        availableQuantity: product.availableQuantity - quantity,
+        inRepairQuantity: product.inRepairQuantity + quantity,
+      },
+    });
+  }
+
+  // POST /products/:id/mark-repaired - Return units from repair to available
+  async markRepaired(id: number, quantity: number) {
+    const product = await this.prisma.product.findUnique({
+      where: { id },
+    });
+
+    if (!product) {
+      throw new NotFoundException('PRODUCT_NOT_FOUND');
+    }
+
+    if (quantity <= 0) {
+      throw new BadRequestException('QUANTITY_MUST_BE_POSITIVE');
+    }
+
+    if (product.inRepairQuantity < quantity) {
+      throw new BadRequestException('NOT_ENOUGH_IN_REPAIR_QUANTITY');
+    }
+
+    return this.prisma.product.update({
+      where: { id },
+      data: {
+        availableQuantity: product.availableQuantity + quantity,
+        inRepairQuantity: product.inRepairQuantity - quantity,
+      },
     });
   }
 }

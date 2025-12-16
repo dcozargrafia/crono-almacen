@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ProductsService } from './products.service';
 import { PrismaService } from '../prisma.service';
 import { ProductType } from '@prisma/client';
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, BadRequestException } from '@nestjs/common';
 
 const mockPrismaService = {
   product: {
@@ -235,6 +235,47 @@ describe('ProductsService', () => {
         NotFoundException,
       );
     });
+
+    it('should throw BadRequestException if totalQuantity is less than sum of quantities', async () => {
+      // Arrange
+      const existingProduct = createMockProduct({
+        id: 1,
+        totalQuantity: 10,
+        availableQuantity: 5,
+        rentedQuantity: 3,
+        inRepairQuantity: 2,
+      });
+      mockPrismaService.product.findUnique.mockResolvedValue(existingProduct);
+
+      // Act & Assert
+      await expect(service.update(1, { totalQuantity: 8 })).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should allow update if totalQuantity is greater or equal to sum of quantities', async () => {
+      // Arrange
+      const existingProduct = createMockProduct({
+        id: 1,
+        totalQuantity: 10,
+        availableQuantity: 5,
+        rentedQuantity: 3,
+        inRepairQuantity: 2,
+      });
+      const updatedProduct = createMockProduct({
+        id: 1,
+        totalQuantity: 12,
+      });
+
+      mockPrismaService.product.findUnique.mockResolvedValue(existingProduct);
+      mockPrismaService.product.update.mockResolvedValue(updatedProduct);
+
+      // Act
+      const result = await service.update(1, { totalQuantity: 12 });
+
+      // Assert
+      expect(result.totalQuantity).toBe(12);
+    });
   });
 
   // REMOVE (soft delete)
@@ -294,6 +335,255 @@ describe('ProductsService', () => {
 
       // Act & Assert
       await expect(service.reactivate(999)).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  // ADD STOCK
+  describe('addStock', () => {
+    it('should increase totalQuantity and availableQuantity', async () => {
+      // Arrange
+      const existingProduct = createMockProduct({
+        id: 1,
+        totalQuantity: 10,
+        availableQuantity: 8,
+      });
+      const updatedProduct = createMockProduct({
+        id: 1,
+        totalQuantity: 15,
+        availableQuantity: 13,
+      });
+
+      mockPrismaService.product.findUnique.mockResolvedValue(existingProduct);
+      mockPrismaService.product.update.mockResolvedValue(updatedProduct);
+
+      // Act
+      const result = await service.addStock(1, 5);
+
+      // Assert
+      expect(result.totalQuantity).toBe(15);
+      expect(result.availableQuantity).toBe(13);
+      expect(mockPrismaService.product.update).toHaveBeenCalledWith({
+        where: { id: 1 },
+        data: {
+          totalQuantity: 15,
+          availableQuantity: 13,
+        },
+      });
+    });
+
+    it('should throw NotFoundException if product does not exist', async () => {
+      // Arrange
+      mockPrismaService.product.findUnique.mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(service.addStock(999, 5)).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw BadRequestException if quantity is not positive', async () => {
+      // Arrange
+      const existingProduct = createMockProduct({ id: 1 });
+      mockPrismaService.product.findUnique.mockResolvedValue(existingProduct);
+
+      // Act & Assert
+      await expect(service.addStock(1, 0)).rejects.toThrow(BadRequestException);
+      await expect(service.addStock(1, -5)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+  });
+
+  // RETIRE STOCK
+  describe('retire', () => {
+    it('should decrease totalQuantity and availableQuantity', async () => {
+      // Arrange
+      const existingProduct = createMockProduct({
+        id: 1,
+        totalQuantity: 10,
+        availableQuantity: 8,
+      });
+      const updatedProduct = createMockProduct({
+        id: 1,
+        totalQuantity: 7,
+        availableQuantity: 5,
+      });
+
+      mockPrismaService.product.findUnique.mockResolvedValue(existingProduct);
+      mockPrismaService.product.update.mockResolvedValue(updatedProduct);
+
+      // Act
+      const result = await service.retire(1, 3);
+
+      // Assert
+      expect(result.totalQuantity).toBe(7);
+      expect(result.availableQuantity).toBe(5);
+    });
+
+    it('should throw NotFoundException if product does not exist', async () => {
+      // Arrange
+      mockPrismaService.product.findUnique.mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(service.retire(999, 5)).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw BadRequestException if quantity is not positive', async () => {
+      // Arrange
+      const existingProduct = createMockProduct({ id: 1 });
+      mockPrismaService.product.findUnique.mockResolvedValue(existingProduct);
+
+      // Act & Assert
+      await expect(service.retire(1, 0)).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException if not enough available quantity', async () => {
+      // Arrange
+      const existingProduct = createMockProduct({
+        id: 1,
+        totalQuantity: 10,
+        availableQuantity: 3,
+      });
+      mockPrismaService.product.findUnique.mockResolvedValue(existingProduct);
+
+      // Act & Assert
+      await expect(service.retire(1, 5)).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  // SEND TO REPAIR
+  describe('sendToRepair', () => {
+    it('should move quantity from available to inRepair', async () => {
+      // Arrange
+      const existingProduct = createMockProduct({
+        id: 1,
+        availableQuantity: 8,
+        inRepairQuantity: 2,
+      });
+      const updatedProduct = createMockProduct({
+        id: 1,
+        availableQuantity: 5,
+        inRepairQuantity: 5,
+      });
+
+      mockPrismaService.product.findUnique.mockResolvedValue(existingProduct);
+      mockPrismaService.product.update.mockResolvedValue(updatedProduct);
+
+      // Act
+      const result = await service.sendToRepair(1, 3);
+
+      // Assert
+      expect(result.availableQuantity).toBe(5);
+      expect(result.inRepairQuantity).toBe(5);
+      expect(mockPrismaService.product.update).toHaveBeenCalledWith({
+        where: { id: 1 },
+        data: {
+          availableQuantity: 5,
+          inRepairQuantity: 5,
+        },
+      });
+    });
+
+    it('should throw NotFoundException if product does not exist', async () => {
+      // Arrange
+      mockPrismaService.product.findUnique.mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(service.sendToRepair(999, 3)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('should throw BadRequestException if quantity is not positive', async () => {
+      // Arrange
+      const existingProduct = createMockProduct({ id: 1 });
+      mockPrismaService.product.findUnique.mockResolvedValue(existingProduct);
+
+      // Act & Assert
+      await expect(service.sendToRepair(1, 0)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should throw BadRequestException if not enough available quantity', async () => {
+      // Arrange
+      const existingProduct = createMockProduct({
+        id: 1,
+        availableQuantity: 2,
+      });
+      mockPrismaService.product.findUnique.mockResolvedValue(existingProduct);
+
+      // Act & Assert
+      await expect(service.sendToRepair(1, 5)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+  });
+
+  // MARK REPAIRED
+  describe('markRepaired', () => {
+    it('should move quantity from inRepair to available', async () => {
+      // Arrange
+      const existingProduct = createMockProduct({
+        id: 1,
+        availableQuantity: 5,
+        inRepairQuantity: 5,
+      });
+      const updatedProduct = createMockProduct({
+        id: 1,
+        availableQuantity: 8,
+        inRepairQuantity: 2,
+      });
+
+      mockPrismaService.product.findUnique.mockResolvedValue(existingProduct);
+      mockPrismaService.product.update.mockResolvedValue(updatedProduct);
+
+      // Act
+      const result = await service.markRepaired(1, 3);
+
+      // Assert
+      expect(result.availableQuantity).toBe(8);
+      expect(result.inRepairQuantity).toBe(2);
+      expect(mockPrismaService.product.update).toHaveBeenCalledWith({
+        where: { id: 1 },
+        data: {
+          availableQuantity: 8,
+          inRepairQuantity: 2,
+        },
+      });
+    });
+
+    it('should throw NotFoundException if product does not exist', async () => {
+      // Arrange
+      mockPrismaService.product.findUnique.mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(service.markRepaired(999, 3)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('should throw BadRequestException if quantity is not positive', async () => {
+      // Arrange
+      const existingProduct = createMockProduct({ id: 1 });
+      mockPrismaService.product.findUnique.mockResolvedValue(existingProduct);
+
+      // Act & Assert
+      await expect(service.markRepaired(1, 0)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should throw BadRequestException if not enough inRepair quantity', async () => {
+      // Arrange
+      const existingProduct = createMockProduct({
+        id: 1,
+        inRepairQuantity: 2,
+      });
+      mockPrismaService.product.findUnique.mockResolvedValue(existingProduct);
+
+      // Act & Assert
+      await expect(service.markRepaired(1, 5)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 });

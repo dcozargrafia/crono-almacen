@@ -27,8 +27,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `PATCH /product-units/:id/reactivate` - Reactivate soft-deleted unit
   - `DELETE /product-units/:id` - Soft delete product unit
 - New enums: ProductType, ProductUnitStatus
-- Unit tests for ProductsService (15 tests with TDD)
+- Product inventory management endpoints:
+  - `POST /products/:id/add-stock` - Add units to inventory
+  - `POST /products/:id/retire` - Remove units from inventory
+  - `POST /products/:id/send-to-repair` - Move to repair
+  - `POST /products/:id/mark-repaired` - Return from repair
+- Quantity validation in product update (totalQuantity >= used quantities)
+- Unit tests for ProductsService (32 tests with TDD)
 - Unit tests for ProductUnitsService (20 tests with TDD)
+- Architectural Decision Records (ADR-001, ADR-002) for inventory management
 - Device management module (CRUD for authenticated users)
   - `POST /devices` - Create device
   - `GET /devices` - List devices (with pagination and filters)
