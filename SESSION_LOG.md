@@ -370,6 +370,13 @@ Implement Rentals module for equipment tracking.
 - [ ] **Partial returns** - Devolver solo algunos items de un alquiler
 - [ ] **Rental extension** - Extender fecha de devolución esperada
 
+### Next Session: Tritones (chips de cronometraje)
+Feature especial para gestión de chips de cronometraje:
+- **Stock**: 7200 chips (producto quantity-based con tratamiento especial)
+- **Rangos**: Registrar rango alquilado por cliente (ej: 1001-1500)
+- **Sin estado individual**: No hace falta estado disponible por chip, solo constancia del rango
+- **Archivo de secuenciación**: Generar archivo para enviar al cliente con la secuencia de chips
+
 ### Questions / Doubts
 - (none)
 
