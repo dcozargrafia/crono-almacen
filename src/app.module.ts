@@ -6,9 +6,18 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { ClientsModule } from './clients/clients.module';
 import { DevicesModule } from './devices/devices.module';
+import { ProductsModule } from './products/products.module';
+import { ProductUnitsModule } from './product-units/product-units.module';
 
 @Module({
-  imports: [AuthModule, UsersModule, ClientsModule, DevicesModule],
+  imports: [
+    AuthModule,
+    UsersModule,
+    ClientsModule,
+    DevicesModule,
+    ProductsModule,
+    ProductUnitsModule,
+  ],
   controllers: [AppController],
   providers: [AppService, PrismaService],
   exports: [PrismaService],

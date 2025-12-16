@@ -1,0 +1,299 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { ProductsService } from './products.service';
+import { PrismaService } from '../prisma.service';
+import { ProductType } from '@prisma/client';
+import { NotFoundException } from '@nestjs/common';
+
+const mockPrismaService = {
+  product: {
+    findUnique: jest.fn(),
+    findMany: jest.fn(),
+    count: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+  },
+};
+
+const createMockProduct = (overrides = {}) => ({
+  id: 1,
+  name: 'Antena 900MHz',
+  type: 'ANTENNA' as ProductType,
+  description: null,
+  notes: null,
+  totalQuantity: 10,
+  availableQuantity: 10,
+  rentedQuantity: 0,
+  inRepairQuantity: 0,
+  active: true,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  ...overrides,
+});
+
+describe('ProductsService', () => {
+  let service: ProductsService;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        ProductsService,
+        { provide: PrismaService, useValue: mockPrismaService },
+      ],
+    }).compile();
+
+    service = module.get<ProductsService>(ProductsService);
+    jest.clearAllMocks();
+  });
+
+  it('should be defined', () => {
+    expect(service).toBeDefined();
+  });
+
+  // CREATE
+  describe('create', () => {
+    it('should create a product with initial quantities', async () => {
+      // Arrange
+      const dto = {
+        name: 'Antena 900MHz',
+        type: 'ANTENNA' as ProductType,
+        totalQuantity: 10,
+      };
+      const productFromDb = createMockProduct();
+
+      mockPrismaService.product.create.mockResolvedValue(productFromDb);
+
+      // Act
+      const result = await service.create(dto);
+
+      // Assert
+      expect(result).toEqual(productFromDb);
+      expect(mockPrismaService.product.create).toHaveBeenCalledWith({
+        data: {
+          name: 'Antena 900MHz',
+          type: 'ANTENNA',
+          totalQuantity: 10,
+          availableQuantity: 10,
+        },
+      });
+    });
+
+    it('should create a product with default quantity 0', async () => {
+      // Arrange
+      const dto = {
+        name: 'Cables USB',
+        type: 'CABLE' as ProductType,
+      };
+      const productFromDb = createMockProduct({
+        name: 'Cables USB',
+        type: 'CABLE',
+        totalQuantity: 0,
+        availableQuantity: 0,
+      });
+
+      mockPrismaService.product.create.mockResolvedValue(productFromDb);
+
+      // Act
+      await service.create(dto);
+
+      // Assert
+      expect(mockPrismaService.product.create).toHaveBeenCalledWith({
+        data: {
+          name: 'Cables USB',
+          type: 'CABLE',
+          totalQuantity: 0,
+          availableQuantity: 0,
+        },
+      });
+    });
+  });
+
+  // FIND ALL
+  describe('findAll', () => {
+    it('should return paginated products', async () => {
+      // Arrange
+      const products = [
+        createMockProduct({ id: 1 }),
+        createMockProduct({ id: 2 }),
+      ];
+      mockPrismaService.product.findMany.mockResolvedValue(products);
+      mockPrismaService.product.count.mockResolvedValue(2);
+
+      // Act
+      const result = await service.findAll({ page: 1, pageSize: 10 });
+
+      // Assert
+      expect(result.data).toEqual(products);
+      expect(result.meta).toEqual({
+        total: 2,
+        page: 1,
+        pageSize: 10,
+        totalPages: 1,
+      });
+    });
+
+    it('should filter by type', async () => {
+      // Arrange
+      mockPrismaService.product.findMany.mockResolvedValue([]);
+      mockPrismaService.product.count.mockResolvedValue(0);
+
+      // Act
+      await service.findAll({ type: 'ANTENNA' as ProductType });
+
+      // Assert
+      expect(mockPrismaService.product.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ type: 'ANTENNA' }),
+        }),
+      );
+    });
+
+    it('should filter by active status', async () => {
+      // Arrange
+      mockPrismaService.product.findMany.mockResolvedValue([]);
+      mockPrismaService.product.count.mockResolvedValue(0);
+
+      // Act
+      await service.findAll({ active: true });
+
+      // Assert
+      expect(mockPrismaService.product.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ active: true }),
+        }),
+      );
+    });
+
+    it('should return all products when active filter is not set', async () => {
+      // Arrange
+      mockPrismaService.product.findMany.mockResolvedValue([]);
+      mockPrismaService.product.count.mockResolvedValue(0);
+
+      // Act
+      await service.findAll({});
+
+      // Assert
+      expect(mockPrismaService.product.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {},
+        }),
+      );
+    });
+  });
+
+  // FIND ONE
+  describe('findOne', () => {
+    it('should return a product by id', async () => {
+      // Arrange
+      const product = createMockProduct({ id: 1 });
+      mockPrismaService.product.findUnique.mockResolvedValue(product);
+
+      // Act
+      const result = await service.findOne(1);
+
+      // Assert
+      expect(result).toEqual(product);
+      expect(mockPrismaService.product.findUnique).toHaveBeenCalledWith({
+        where: { id: 1 },
+      });
+    });
+
+    it('should throw NotFoundException if product does not exist', async () => {
+      // Arrange
+      mockPrismaService.product.findUnique.mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(service.findOne(999)).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  // UPDATE
+  describe('update', () => {
+    it('should update a product', async () => {
+      // Arrange
+      const existingProduct = createMockProduct({ id: 1 });
+      const updatedProduct = createMockProduct({
+        id: 1,
+        name: 'Antena 900MHz v2',
+      });
+
+      mockPrismaService.product.findUnique.mockResolvedValue(existingProduct);
+      mockPrismaService.product.update.mockResolvedValue(updatedProduct);
+
+      // Act
+      const result = await service.update(1, { name: 'Antena 900MHz v2' });
+
+      // Assert
+      expect(result.name).toBe('Antena 900MHz v2');
+    });
+
+    it('should throw NotFoundException if product does not exist', async () => {
+      // Arrange
+      mockPrismaService.product.findUnique.mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(service.update(999, { name: 'test' })).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
+  // REMOVE (soft delete)
+  describe('remove', () => {
+    it('should soft delete a product by setting active to false', async () => {
+      // Arrange
+      const existingProduct = createMockProduct({ id: 1 });
+      const deletedProduct = createMockProduct({ id: 1, active: false });
+
+      mockPrismaService.product.findUnique.mockResolvedValue(existingProduct);
+      mockPrismaService.product.update.mockResolvedValue(deletedProduct);
+
+      // Act
+      const result = await service.remove(1);
+
+      // Assert
+      expect(result.active).toBe(false);
+      expect(mockPrismaService.product.update).toHaveBeenCalledWith({
+        where: { id: 1 },
+        data: { active: false },
+      });
+    });
+
+    it('should throw NotFoundException if product does not exist', async () => {
+      // Arrange
+      mockPrismaService.product.findUnique.mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(service.remove(999)).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  // REACTIVATE
+  describe('reactivate', () => {
+    it('should reactivate a soft-deleted product', async () => {
+      // Arrange
+      const inactiveProduct = createMockProduct({ id: 1, active: false });
+      const reactivatedProduct = createMockProduct({ id: 1, active: true });
+
+      mockPrismaService.product.findUnique.mockResolvedValue(inactiveProduct);
+      mockPrismaService.product.update.mockResolvedValue(reactivatedProduct);
+
+      // Act
+      const result = await service.reactivate(1);
+
+      // Assert
+      expect(result.active).toBe(true);
+      expect(mockPrismaService.product.update).toHaveBeenCalledWith({
+        where: { id: 1 },
+        data: { active: true },
+      });
+    });
+
+    it('should throw NotFoundException if product does not exist', async () => {
+      // Arrange
+      mockPrismaService.product.findUnique.mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(service.reactivate(999)).rejects.toThrow(NotFoundException);
+    });
+  });
+});
