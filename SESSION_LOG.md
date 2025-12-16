@@ -300,9 +300,75 @@ Implement Products module for rental equipment (non-device items).
   - AppController: 3 tests
 
 ### Pending / Next Session
-- [ ] Test Products endpoints with Postman
-- [ ] Test ProductUnits endpoints with Postman
-- [ ] Implement Rental module
+- [x] Implement Rental module (completed in Session 6)
+
+### Questions / Doubts
+- (none)
+
+---
+
+## Session 6 - 2024-12-16
+
+### Objective
+Implement Rentals module for equipment tracking.
+
+### Completed
+- [x] Designed Rental schema with join tables:
+  - Rental: main transaction record
+  - RentalDevice: devices in rental
+  - RentalProduct: products (by quantity) in rental
+  - RentalProductUnit: product units (by serial) in rental
+- [x] Added RentalStatus enum (ACTIVE, RETURNED, CANCELLED)
+- [x] Generated migration `20251216183543_add_rentals`
+- [x] Added internal methods to ProductsService (ADR-001):
+  - rentQuantity() - Move from available to rented
+  - returnQuantity() - Move from rented to available
+- [x] Generated NestJS Rentals module
+- [x] Implemented RentalsService with TDD (24 tests):
+  - create() - with validation of client, devices, products, productUnits
+  - findAll() - with pagination and filters (status, clientId)
+  - findOne() - with NotFoundException
+  - update() - update basic fields (only ACTIVE rentals)
+  - returnRental() - mark as returned, restore inventory
+  - cancelRental() - mark as cancelled, restore inventory
+- [x] Implemented RentalsController with all endpoints
+- [x] Updated documentation (API.md, DATABASE.md)
+
+### Decisions Made
+- **No DRAFT status**: Started simple with only ACTIVE, RETURNED, CANCELLED
+- **Service-level integration**: RentalsService calls ProductsService methods, not HTTP endpoints (ADR-001)
+- **Transactional operations**: Create, return, and cancel use $transaction for atomicity
+- **Inventory restoration**: Both return and cancel restore all inventory (devices, products, productUnits)
+
+### API Endpoints (Rentals)
+| Method | Endpoint | Description | Access |
+|--------|----------|-------------|--------|
+| POST | /rentals | Create rental | Authenticated |
+| GET | /rentals | List rentals (with pagination and filters) | Authenticated |
+| GET | /rentals/:id | Get rental | Authenticated |
+| PATCH | /rentals/:id | Update rental (dates, notes) | Authenticated |
+| POST | /rentals/:id/return | Mark as returned | Authenticated |
+| POST | /rentals/:id/cancel | Cancel rental | Authenticated |
+
+### Test Summary
+- Total tests: 152 (all passing)
+  - AuthService: 8 tests
+  - UsersService: 13 tests
+  - ClientsService: 15 tests
+  - DevicesService: 29 tests
+  - ProductsService: 40 tests (32 + 8 rental quantity methods)
+  - ProductUnitsService: 20 tests
+  - RentalsService: 24 tests
+  - AppController: 3 tests
+
+### Pending / Next Session
+- [ ] Test Rentals endpoints with Postman
+- [ ] E2E testing of full rental workflow
+
+### Future Features (Rentals)
+- [ ] **Pending rentals endpoint** - GET /rentals/pending para el frontend
+- [ ] **Partial returns** - Devolver solo algunos items de un alquiler
+- [ ] **Rental extension** - Extender fecha de devolución esperada
 
 ### Questions / Doubts
 - (none)

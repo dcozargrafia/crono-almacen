@@ -586,4 +586,142 @@ describe('ProductsService', () => {
       );
     });
   });
+
+  // RENT QUANTITY (internal method for RentalsService)
+  describe('rentQuantity', () => {
+    it('should move quantity from available to rented', async () => {
+      // Arrange
+      const existingProduct = createMockProduct({
+        id: 1,
+        availableQuantity: 10,
+        rentedQuantity: 0,
+      });
+      const updatedProduct = createMockProduct({
+        id: 1,
+        availableQuantity: 7,
+        rentedQuantity: 3,
+      });
+
+      mockPrismaService.product.findUnique.mockResolvedValue(existingProduct);
+      mockPrismaService.product.update.mockResolvedValue(updatedProduct);
+
+      // Act
+      const result = await service.rentQuantity(1, 3);
+
+      // Assert
+      expect(result.availableQuantity).toBe(7);
+      expect(result.rentedQuantity).toBe(3);
+      expect(mockPrismaService.product.update).toHaveBeenCalledWith({
+        where: { id: 1 },
+        data: {
+          availableQuantity: 7,
+          rentedQuantity: 3,
+        },
+      });
+    });
+
+    it('should throw NotFoundException if product does not exist', async () => {
+      // Arrange
+      mockPrismaService.product.findUnique.mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(service.rentQuantity(999, 3)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('should throw BadRequestException if quantity is not positive', async () => {
+      // Arrange
+      const existingProduct = createMockProduct({ id: 1 });
+      mockPrismaService.product.findUnique.mockResolvedValue(existingProduct);
+
+      // Act & Assert
+      await expect(service.rentQuantity(1, 0)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should throw BadRequestException if not enough available quantity', async () => {
+      // Arrange
+      const existingProduct = createMockProduct({
+        id: 1,
+        availableQuantity: 2,
+      });
+      mockPrismaService.product.findUnique.mockResolvedValue(existingProduct);
+
+      // Act & Assert
+      await expect(service.rentQuantity(1, 5)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+  });
+
+  // RETURN QUANTITY (internal method for RentalsService)
+  describe('returnQuantity', () => {
+    it('should move quantity from rented to available', async () => {
+      // Arrange
+      const existingProduct = createMockProduct({
+        id: 1,
+        availableQuantity: 7,
+        rentedQuantity: 3,
+      });
+      const updatedProduct = createMockProduct({
+        id: 1,
+        availableQuantity: 10,
+        rentedQuantity: 0,
+      });
+
+      mockPrismaService.product.findUnique.mockResolvedValue(existingProduct);
+      mockPrismaService.product.update.mockResolvedValue(updatedProduct);
+
+      // Act
+      const result = await service.returnQuantity(1, 3);
+
+      // Assert
+      expect(result.availableQuantity).toBe(10);
+      expect(result.rentedQuantity).toBe(0);
+      expect(mockPrismaService.product.update).toHaveBeenCalledWith({
+        where: { id: 1 },
+        data: {
+          availableQuantity: 10,
+          rentedQuantity: 0,
+        },
+      });
+    });
+
+    it('should throw NotFoundException if product does not exist', async () => {
+      // Arrange
+      mockPrismaService.product.findUnique.mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(service.returnQuantity(999, 3)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('should throw BadRequestException if quantity is not positive', async () => {
+      // Arrange
+      const existingProduct = createMockProduct({ id: 1 });
+      mockPrismaService.product.findUnique.mockResolvedValue(existingProduct);
+
+      // Act & Assert
+      await expect(service.returnQuantity(1, 0)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should throw BadRequestException if not enough rented quantity', async () => {
+      // Arrange
+      const existingProduct = createMockProduct({
+        id: 1,
+        rentedQuantity: 2,
+      });
+      mockPrismaService.product.findUnique.mockResolvedValue(existingProduct);
+
+      // Act & Assert
+      await expect(service.returnQuantity(1, 5)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+  });
 });

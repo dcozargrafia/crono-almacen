@@ -73,6 +73,7 @@ model Client {
   updatedAt DateTime @updatedAt
 
   devices Device[]
+  rentals Rental[]
 
   @@map("clients")
 }
@@ -126,6 +127,9 @@ model Device {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Relations
+  rentalDevices RentalDevice[]
+
   // Indexes
   @@index([model])
   @@index([manufactoringStatus])
@@ -153,6 +157,13 @@ enum ProductUnitStatus {
   RETIRED
 }
 
+// Rental status
+enum RentalStatus {
+  ACTIVE     // In progress
+  RETURNED   // All items returned
+  CANCELLED  // Cancelled (inventory restored)
+}
+
 // Rental products tracked by quantity (antennas, cables, etc.)
 model Product {
   id          Int         @id @default(autoincrement())
@@ -170,6 +181,9 @@ model Product {
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // Relations
+  rentalProducts RentalProduct[]
 
   @@index([type])
   @@index([active])
@@ -189,9 +203,77 @@ model ProductUnit {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Relations
+  rentalProductUnits RentalProductUnit[]
+
   @@index([type])
   @@index([status])
   @@index([active])
 
   @@map("product_units")
+}
+
+// Rental transaction
+model Rental {
+  id              Int          @id @default(autoincrement())
+  clientId        Int
+  client          Client       @relation(fields: [clientId], references: [id])
+
+  startDate       DateTime
+  expectedEndDate DateTime
+  actualEndDate   DateTime?    // Filled when returned
+
+  status          RentalStatus @default(ACTIVE)
+  notes           String?
+
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  // Rented items
+  devices      RentalDevice[]
+  products     RentalProduct[]
+  productUnits RentalProductUnit[]
+
+  @@index([clientId])
+  @@index([status])
+  @@index([startDate])
+
+  @@map("rentals")
+}
+
+// Devices in a rental
+model RentalDevice {
+  id       Int    @id @default(autoincrement())
+  rentalId Int
+  rental   Rental @relation(fields: [rentalId], references: [id], onDelete: Cascade)
+  deviceId Int
+  device   Device @relation(fields: [deviceId], references: [id])
+
+  @@unique([rentalId, deviceId])
+  @@map("rental_devices")
+}
+
+// Products (quantity-based) in a rental
+model RentalProduct {
+  id        Int     @id @default(autoincrement())
+  rentalId  Int
+  rental    Rental  @relation(fields: [rentalId], references: [id], onDelete: Cascade)
+  productId Int
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int
+
+  @@unique([rentalId, productId])
+  @@map("rental_products")
+}
+
+// ProductUnits (serial-based) in a rental
+model RentalProductUnit {
+  id            Int         @id @default(autoincrement())
+  rentalId      Int
+  rental        Rental      @relation(fields: [rentalId], references: [id], onDelete: Cascade)
+  productUnitId Int
+  productUnit   ProductUnit @relation(fields: [productUnitId], references: [id])
+
+  @@unique([rentalId, productUnitId])
+  @@map("rental_product_units")
 }

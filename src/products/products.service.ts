@@ -241,4 +241,58 @@ export class ProductsService {
       },
     });
   }
+
+  // Internal method for RentalsService - Move units from available to rented
+  async rentQuantity(id: number, quantity: number) {
+    const product = await this.prisma.product.findUnique({
+      where: { id },
+    });
+
+    if (!product) {
+      throw new NotFoundException('PRODUCT_NOT_FOUND');
+    }
+
+    if (quantity <= 0) {
+      throw new BadRequestException('QUANTITY_MUST_BE_POSITIVE');
+    }
+
+    if (product.availableQuantity < quantity) {
+      throw new BadRequestException('NOT_ENOUGH_AVAILABLE_QUANTITY');
+    }
+
+    return this.prisma.product.update({
+      where: { id },
+      data: {
+        availableQuantity: product.availableQuantity - quantity,
+        rentedQuantity: product.rentedQuantity + quantity,
+      },
+    });
+  }
+
+  // Internal method for RentalsService - Move units from rented to available
+  async returnQuantity(id: number, quantity: number) {
+    const product = await this.prisma.product.findUnique({
+      where: { id },
+    });
+
+    if (!product) {
+      throw new NotFoundException('PRODUCT_NOT_FOUND');
+    }
+
+    if (quantity <= 0) {
+      throw new BadRequestException('QUANTITY_MUST_BE_POSITIVE');
+    }
+
+    if (product.rentedQuantity < quantity) {
+      throw new BadRequestException('NOT_ENOUGH_RENTED_QUANTITY');
+    }
+
+    return this.prisma.product.update({
+      where: { id },
+      data: {
+        availableQuantity: product.availableQuantity + quantity,
+        rentedQuantity: product.rentedQuantity - quantity,
+      },
+    });
+  }
 }
