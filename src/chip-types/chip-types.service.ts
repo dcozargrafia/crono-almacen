@@ -138,11 +138,21 @@ export class ChipTypesService {
   // Parse CSV buffer to sequence array
   private parseCsvToSequence(csvBuffer: Buffer): SequenceItem[] {
     try {
-      const content = csvBuffer.toString('utf-8');
+      // Remove BOM if present and normalize content
+      let content = csvBuffer.toString('utf-8');
+      if (content.charCodeAt(0) === 0xfeff) {
+        content = content.slice(1);
+      }
+
+      // Detect delimiter (comma or semicolon)
+      const firstLine = content.split('\n')[0];
+      const delimiter = firstLine.includes(';') ? ';' : ',';
+
       const records = parse(content, {
         columns: true,
         skip_empty_lines: true,
         trim: true,
+        delimiter,
       }) as Record<string, string>[];
 
       if (records.length === 0) {

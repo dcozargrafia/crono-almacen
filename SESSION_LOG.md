@@ -448,9 +448,66 @@ Implement ChipTypes module for timing chips management.
   - AppController: 3 tests
 
 ### Pending / Next Session
+- [x] Add CSV/file export for chip sequences (completed in Session 8)
 - [ ] Test ChipTypes and chip ranges with Postman
-- [ ] Add CSV/file export for chip sequences
 - [ ] Seed data for chip types (Triton, Clipchip, Pod, Activo)
+
+### Questions / Doubts
+- (none)
+
+---
+
+## Session 8 - 2024-12-17
+
+### Objective
+Implement CSV file handling for chip sequences (upload and download).
+
+### Completed
+- [x] Modified `PUT /chip-types/:id/sequence` to accept CSV file upload
+  - Uses FileInterceptor from NestJS/Multer
+  - Parses CSV with `csv-parse` library
+  - Validates CSV format (Chip,Code columns, case-insensitive)
+  - Error handling: CSV_EMPTY, CSV_INVALID_COLUMNS, CSV_INVALID_CHIP_VALUE_AT_ROW_X
+- [x] Created `GET /rentals/:id/chip-file/:chipTypeId` for CSV download
+  - Generates downloadable CSV file for client
+  - Filename format: `{client}-{yyyymmdd}-{chiptype}-rent.csv`
+  - Client name sanitized (lowercase, alphanumeric, hyphens)
+  - Content-Disposition header for file download
+- [x] Installed dependencies: `csv-parse`, `csv-stringify`
+- [x] Exported SequenceItem interface from ChipTypesService
+- [x] Added 5 new tests for getChipFileForRental in RentalsService
+- [x] Updated controller tests for file upload
+- [x] Updated documentation (API.md, CHANGELOG.md)
+
+### Decisions Made
+- **Backend parses CSV**: Frontend sends raw file, backend handles parsing
+- **One file per chip type**: No ZIP, separate endpoint per chip type in rental
+- **CSV format simple**: Only two columns: Chip,Code
+- **Filename sanitization**: Remove special chars, collapse multiple hyphens
+
+### API Endpoints (Updated)
+| Method | Endpoint | Description | Access |
+|--------|----------|-------------|--------|
+| PUT | /chip-types/:id/sequence | Upload sequence from CSV file | Authenticated |
+| GET | /rentals/:id/chip-file/:chipTypeId | Download chip sequence CSV | Authenticated |
+
+### Test Summary
+- Total tests: 197 (all passing)
+  - AuthService: 8 tests
+  - UsersService: 13 tests
+  - ClientsService: 15 tests
+  - DevicesService: 29 tests
+  - ProductsService: 40 tests
+  - ProductUnitsService: 20 tests
+  - RentalsService: 35 tests (+5 for CSV download)
+  - ChipTypesService: 18 tests
+  - ChipTypesController: 15 tests (updated for file upload)
+  - AppController: 4 tests
+
+### Pending / Next Session
+- [ ] Test CSV upload/download with Postman
+- [ ] Seed data for chip types (Triton, Clipchip, Pod, Activo)
+- [ ] Test full rental workflow with chip ranges
 
 ### Questions / Doubts
 - (none)

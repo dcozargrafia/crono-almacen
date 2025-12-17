@@ -463,21 +463,26 @@ export class RentalsService {
       throw new NotFoundException('RENTAL_NOT_FOUND');
     }
 
-    const chipRange = rental.chipRanges?.find(
+    // Get all ranges for this chip type
+    const chipRanges = rental.chipRanges?.filter(
       (range) => range.chipTypeId === chipTypeId,
     );
 
-    if (!chipRange) {
+    if (!chipRanges || chipRanges.length === 0) {
       throw new NotFoundException('CHIP_TYPE_NOT_IN_RENTAL');
     }
 
     const sequenceData =
-      (chipRange.chipType.sequenceData as { chip: number; code: string }[]) ||
-      [];
+      (chipRanges[0].chipType.sequenceData as {
+        chip: number;
+        code: string;
+      }[]) || [];
 
-    const filteredSequence = sequenceData.filter(
-      (item) =>
-        item.chip >= chipRange.rangeStart && item.chip <= chipRange.rangeEnd,
+    // Filter sequence for all ranges of this chip type
+    const filteredSequence = sequenceData.filter((item) =>
+      chipRanges.some(
+        (range) => item.chip >= range.rangeStart && item.chip <= range.rangeEnd,
+      ),
     );
 
     const csv = stringify(filteredSequence, {
@@ -491,7 +496,7 @@ export class RentalsService {
     // Format: cliente-aaaammdd-chiptype-rent.csv
     const clientName = this.sanitizeFilename(rental.client.name);
     const dateStr = this.formatDateForFilename(rental.startDate);
-    const chipTypeName = chipRange.chipType.name.toLowerCase();
+    const chipTypeName = chipRanges[0].chipType.name.toLowerCase();
     const filename = `${clientName}-${dateStr}-${chipTypeName}-rent.csv`;
 
     return { csv, filename };
