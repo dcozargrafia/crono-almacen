@@ -478,12 +478,29 @@ Implement CSV file handling for chip sequences (upload and download).
 - [x] Added 5 new tests for getChipFileForRental in RentalsService
 - [x] Updated controller tests for file upload
 - [x] Updated documentation (API.md, CHANGELOG.md)
+- [x] Seed data completo:
+  - 2 users (admin, user)
+  - 2 clients (Cronochip, Acme Sports)
+  - 2 devices (TS2, TS2+)
+  - 2 products (Antenas, Cables)
+  - 2 product units (Stopwatch, MiFi)
+  - 4 chip types (Triton 7200, Clipchip 1000, Pod 200, Activo 250)
+  - 2 rentals (1 ACTIVE, 1 RETURNED)
+- [x] Probado CSV upload/download con Postman
+- [x] Creado rental desde Postman
+
+### Bugs Fixed
+- **CSV parser**: Ahora soporta delimitador `;` (punto y coma) además de `,`
+- **CSV parser**: Elimina BOM de archivos UTF-8
+- **Chip file download**: Ahora incluye todos los rangos del mismo chip type (usaba `.find()` en vez de `.filter()`)
+- **DevicesModule**: Faltaba PrismaService en providers
 
 ### Decisions Made
 - **Backend parses CSV**: Frontend sends raw file, backend handles parsing
 - **One file per chip type**: No ZIP, separate endpoint per chip type in rental
 - **CSV format simple**: Only two columns: Chip,Code
 - **Filename sanitization**: Remove special chars, collapse multiple hyphens
+- **chip-files/ ignorado**: Datos de secuenciación son de prueba, no se commitean
 
 ### API Endpoints (Updated)
 | Method | Endpoint | Description | Access |
@@ -505,9 +522,8 @@ Implement CSV file handling for chip sequences (upload and download).
   - AppController: 4 tests
 
 ### Pending / Next Session
-- [ ] Test CSV upload/download with Postman
-- [ ] Seed data for chip types (Triton, Clipchip, Pod, Activo)
-- [ ] Test full rental workflow with chip ranges
+- [ ] Actualizar tests para múltiples rangos en getChipFileForRental
+- [ ] E2E testing del flujo completo de rental
 
 ### Questions / Doubts
 - (none)
